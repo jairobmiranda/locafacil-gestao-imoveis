@@ -1,0 +1,1 @@
+Mantém a pasta no versionamento. O Dockerfile.web copia este diretório no build.

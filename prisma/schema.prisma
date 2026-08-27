@@ -1,0 +1,584 @@
+// LocaFacil, modelagem de dados
+// Documentacao completa em .github/modelagem-dados.md
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider          = "mysql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum Estrategia {
+  REVENDA
+  LOCACAO
+  TERRENO
+  USO_PROPRIO
+}
+
+enum SituacaoImovel {
+  PROSPECCAO
+  ADQUIRIDO
+  EM_REFORMA
+  A_VENDA
+  PARA_ALUGAR
+  ALUGADO
+  VENDIDO
+}
+
+enum TipoImovel {
+  APARTAMENTO
+  CASA
+  TERRENO
+  COMERCIAL
+  RURAL
+}
+
+enum Natureza {
+  ENTRADA
+  SAIDA
+}
+
+enum SituacaoLancamento {
+  PENDENTE
+  PAGO
+  ATRASADO
+  PARCIAL
+  CANCELADO
+}
+
+enum OrigemLancamento {
+  MANUAL
+  CONTRATO_AUTOMATICO
+}
+
+enum FormaPagamento {
+  PIX
+  TED
+  DINHEIRO
+  BOLETO
+  CARTAO
+}
+
+enum SituacaoContrato {
+  RASCUNHO
+  ATIVO
+  ENCERRADO
+  RESCINDIDO
+}
+
+enum IndiceReajuste {
+  IGPM
+  IPCA
+  INCC
+  NENHUM
+}
+
+enum TipoGarantia {
+  CAUCAO
+  FIADOR
+  SEGURO_FIANCA
+  NENHUMA
+}
+
+enum PapelParte {
+  INQUILINO
+  FIADOR
+  CONJUGE
+}
+
+enum SituacaoNotificacao {
+  PENDENTE
+  ENVIADO
+  FALHOU
+  IGNORADO
+  CANCELADO
+}
+
+enum TipoChavePix {
+  CPF
+  CNPJ
+  EMAIL
+  TELEFONE
+  ALEATORIA
+}
+
+enum EntidadeAnexo {
+  IMOVEL
+  LANCAMENTO
+  CONTRATO
+  PESSOA
+}
+
+enum EspecieAnexo {
+  COMPROVANTE
+  NOTA_FISCAL
+  CONTRATO
+  FOTO
+  ESCRITURA
+  LAUDO
+  OUTRO
+}
+
+enum PerfilUsuario {
+  ADMIN
+  OPERADOR
+  LEITURA
+}
+
+enum TipoConfiguracao {
+  TEXTO
+  NUMERO
+  BOOLEANO
+  JSON
+}
+
+// ---------------------------------------------------------------------------
+// Bloco 1: Patrimonio
+// ---------------------------------------------------------------------------
+
+model Imovel {
+  id       String         @id @default(uuid()) @db.Char(36)
+  apelido  String         @db.VarChar(80)
+  estrategia Estrategia
+  situacao SituacaoImovel @default(PROSPECCAO)
+  tipo     TipoImovel
+
+  cep         String? @db.VarChar(9)
+  logradouro  String? @db.VarChar(150)
+  numero      String? @db.VarChar(20)
+  complemento String? @db.VarChar(80)
+  bairro      String? @db.VarChar(80)
+  cidade      String? @db.VarChar(80)
+  uf          String? @db.Char(2)
+
+  matricula          String? @map("matricula") @db.VarChar(50)
+  inscricaoMunicipal String? @map("inscricao_municipal") @db.VarChar(50)
+
+  areaTotal      Decimal? @map("area_total") @db.Decimal(10, 2)
+  areaConstruida Decimal? @map("area_construida") @db.Decimal(10, 2)
+  quartos        Int?
+  vagas          Int?
+
+  dataAquisicao  DateTime? @map("data_aquisicao") @db.Date
+  valorAquisicao Decimal?  @map("valor_aquisicao") @db.Decimal(14, 2)
+  dataVenda      DateTime? @map("data_venda") @db.Date
+  valorVenda     Decimal?  @map("valor_venda") @db.Decimal(14, 2)
+
+  valorVendaAlvo Decimal? @map("valor_venda_alvo") @db.Decimal(14, 2)
+  aluguelAlvo    Decimal? @map("aluguel_alvo") @db.Decimal(14, 2)
+
+  observacoes String? @db.Text
+
+  criadoEm     DateTime  @default(now()) @map("criado_em")
+  atualizadoEm DateTime  @updatedAt @map("atualizado_em")
+  arquivadoEm  DateTime? @map("arquivado_em")
+
+  lancamentos Lancamento[]
+  contratos   Contrato[]
+
+  @@index([situacao])
+  @@index([estrategia])
+  @@index([arquivadoEm])
+  @@map("imoveis")
+}
+
+/// Cadastro unico para inquilino, fiador, comprador e fornecedor.
+/// O papel vem do relacionamento, nao de um campo de tipo.
+model Pessoa {
+  id             String    @id @default(uuid()) @db.Char(36)
+  nome           String    @db.VarChar(150)
+  documento      String?   @unique @db.VarChar(18)
+  email          String?   @db.VarChar(150)
+  telefone       String?   @db.VarChar(20)
+  dataNascimento DateTime? @map("data_nascimento") @db.Date
+
+  cep         String? @db.VarChar(9)
+  logradouro  String? @db.VarChar(150)
+  numero      String? @db.VarChar(20)
+  complemento String? @db.VarChar(80)
+  bairro      String? @db.VarChar(80)
+  cidade      String? @db.VarChar(80)
+  uf          String? @db.Char(2)
+
+  observacoes String? @db.Text
+
+  criadoEm     DateTime  @default(now()) @map("criado_em")
+  atualizadoEm DateTime  @updatedAt @map("atualizado_em")
+  arquivadoEm  DateTime? @map("arquivado_em")
+
+  lancamentos     Lancamento[]
+  partesContrato  ParteContrato[]
+
+  @@index([email])
+  @@index([nome])
+  @@map("pessoas")
+}
+
+// ---------------------------------------------------------------------------
+// Bloco 2: Financeiro
+// ---------------------------------------------------------------------------
+
+model Categoria {
+  id                  String   @id @default(uuid()) @db.Char(36)
+  nome                String   @db.VarChar(80)
+  natureza            Natureza
+  categoriaPaiId      String?  @map("categoria_pai_id") @db.Char(36)
+  capitalizavelPadrao Boolean  @default(false) @map("capitalizavel_padrao")
+  codigoFiscal        String?  @map("codigo_fiscal") @db.VarChar(20)
+  doSistema           Boolean  @default(false) @map("do_sistema")
+  ativa               Boolean  @default(true)
+
+  categoriaPai Categoria?  @relation("CategoriaHierarquia", fields: [categoriaPaiId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  subcategorias Categoria[] @relation("CategoriaHierarquia")
+
+  lancamentos      Lancamento[]
+  itensLancamento  ItemLancamento[]
+  itensContrato    ItemContrato[]
+
+  @@unique([nome, natureza])
+  @@index([natureza, ativa])
+  @@map("categorias")
+}
+
+/// Nucleo do sistema. Representa tanto uma cobranca futura quanto um
+/// lancamento ja realizado.
+model Lancamento {
+  id          String  @id @default(uuid()) @db.Char(36)
+  imovelId    String  @map("imovel_id") @db.Char(36)
+  contratoId  String? @map("contrato_id") @db.Char(36)
+  categoriaId String  @map("categoria_id") @db.Char(36)
+  pessoaId    String? @map("pessoa_id") @db.Char(36)
+
+  natureza Natureza
+  situacao SituacaoLancamento @default(PENDENTE)
+  origem   OrigemLancamento   @default(MANUAL)
+
+  descricao   String    @db.VarChar(200)
+  valor       Decimal   @db.Decimal(14, 2)
+  competencia DateTime  @db.Date
+  vencimento  DateTime? @db.Date
+  pagoEm      DateTime? @map("pago_em")
+  valorPago   Decimal?  @map("valor_pago") @db.Decimal(14, 2)
+
+  valorMulta    Decimal @default(0) @map("valor_multa") @db.Decimal(14, 2)
+  valorJuros    Decimal @default(0) @map("valor_juros") @db.Decimal(14, 2)
+  valorDesconto Decimal @default(0) @map("valor_desconto") @db.Decimal(14, 2)
+
+  capitalizavel  Boolean         @default(false)
+  formaPagamento FormaPagamento?
+
+  pixTxid    String? @unique @map("pix_txid") @db.VarChar(25)
+  pixPayload String? @map("pix_payload") @db.Text
+
+  /// Preenchida apenas na geracao automatica, no formato `{contratoId}:{AAAA-MM}`.
+  /// MySQL permite multiplos NULL em indice unico, entao lancamentos manuais nao colidem.
+  chaveGeracao String? @unique @map("chave_geracao") @db.VarChar(60)
+
+  observacoes String? @db.Text
+
+  criadoEm     DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  imovel    Imovel     @relation(fields: [imovelId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  contrato  Contrato?  @relation(fields: [contratoId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  categoria Categoria  @relation(fields: [categoriaId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  pessoa    Pessoa?    @relation(fields: [pessoaId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  itens         ItemLancamento[]
+  notificacoes  Notificacao[]
+
+  @@index([imovelId, competencia])
+  @@index([situacao, vencimento])
+  @@index([contratoId, competencia])
+  @@index([categoriaId])
+  @@index([capitalizavel])
+  @@map("lancamentos")
+}
+
+/// Decomposicao opcional do lancamento. Usada nas cobrancas de aluguel para
+/// separar aluguel, condominio e IPTU.
+model ItemLancamento {
+  id           String  @id @default(uuid()) @db.Char(36)
+  lancamentoId String  @map("lancamento_id") @db.Char(36)
+  categoriaId  String  @map("categoria_id") @db.Char(36)
+  descricao    String  @db.VarChar(150)
+  valor        Decimal @db.Decimal(14, 2)
+  ordem        Int     @default(0)
+
+  lancamento Lancamento @relation(fields: [lancamentoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  categoria  Categoria  @relation(fields: [categoriaId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([lancamentoId])
+  @@index([categoriaId])
+  @@map("itens_lancamento")
+}
+
+// ---------------------------------------------------------------------------
+// Bloco 3: Locacao
+// ---------------------------------------------------------------------------
+
+model Contrato {
+  id       String           @id @default(uuid()) @db.Char(36)
+  imovelId String           @map("imovel_id") @db.Char(36)
+  situacao SituacaoContrato @default(RASCUNHO)
+
+  dataInicio   DateTime  @map("data_inicio") @db.Date
+  dataFim      DateTime  @map("data_fim") @db.Date
+  dataRescisao DateTime? @map("data_rescisao") @db.Date
+
+  /// 1 a 31. Ajustado ao ultimo dia do mes quando o dia nao existir.
+  diaVencimento Int     @map("dia_vencimento") @db.TinyInt
+  valorAluguel  Decimal @map("valor_aluguel") @db.Decimal(14, 2)
+
+  percentualMulta      Decimal @default(2.00) @map("percentual_multa") @db.Decimal(5, 2)
+  percentualJurosDia   Decimal @default(0.0330) @map("percentual_juros_dia") @db.Decimal(6, 4)
+  descontoPontualidade Decimal @default(0) @map("desconto_pontualidade") @db.Decimal(14, 2)
+
+  indiceReajuste         IndiceReajuste @default(IGPM) @map("indice_reajuste")
+  intervaloReajusteMeses Int            @default(12) @map("intervalo_reajuste_meses")
+  proximoReajusteEm      DateTime?      @map("proximo_reajuste_em") @db.Date
+
+  tipoGarantia  TipoGarantia @default(NENHUMA) @map("tipo_garantia")
+  valorGarantia Decimal?     @map("valor_garantia") @db.Decimal(14, 2)
+
+  chavePixId      String? @map("chave_pix_id") @db.Char(36)
+  reguaCobrancaId String? @map("regua_cobranca_id") @db.Char(36)
+
+  diasAvisoEncerramento   Int     @default(90) @map("dias_aviso_encerramento")
+  gerarCobrancas          Boolean @default(true) @map("gerar_cobrancas")
+  diasAntecedenciaGeracao Int     @default(10) @map("dias_antecedencia_geracao")
+
+  observacoes String? @db.Text
+
+  criadoEm     DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  imovel        Imovel         @relation(fields: [imovelId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  chavePix      ChavePix?      @relation(fields: [chavePixId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  reguaCobranca ReguaCobranca? @relation(fields: [reguaCobrancaId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  itens        ItemContrato[]
+  partes       ParteContrato[]
+  lancamentos  Lancamento[]
+  notificacoes Notificacao[]
+
+  @@index([imovelId, situacao])
+  @@index([situacao])
+  @@index([proximoReajusteEm])
+  @@index([dataFim])
+  @@map("contratos")
+}
+
+/// Template dos encargos recorrentes. A cada mes vira ItemLancamento.
+model ItemContrato {
+  id          String  @id @default(uuid()) @db.Char(36)
+  contratoId  String  @map("contrato_id") @db.Char(36)
+  categoriaId String  @map("categoria_id") @db.Char(36)
+  descricao   String  @db.VarChar(150)
+  valor       Decimal @db.Decimal(14, 2)
+  ativo       Boolean @default(true)
+
+  contrato  Contrato  @relation(fields: [contratoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  categoria Categoria @relation(fields: [categoriaId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([contratoId])
+  @@map("itens_contrato")
+}
+
+model ParteContrato {
+  id               String     @id @default(uuid()) @db.Char(36)
+  contratoId       String     @map("contrato_id") @db.Char(36)
+  pessoaId         String     @map("pessoa_id") @db.Char(36)
+  papel            PapelParte
+  contatoPrincipal Boolean    @default(false) @map("contato_principal")
+
+  contrato Contrato @relation(fields: [contratoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  pessoa   Pessoa   @relation(fields: [pessoaId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([contratoId, pessoaId, papel])
+  @@index([pessoaId])
+  @@map("partes_contrato")
+}
+
+// ---------------------------------------------------------------------------
+// Bloco 4: Automacao
+// ---------------------------------------------------------------------------
+
+model ModeloEmail {
+  id                   String  @id @default(uuid()) @db.Char(36)
+  chave                String  @unique @db.VarChar(50)
+  nome                 String  @db.VarChar(100)
+  assunto              String  @db.VarChar(200)
+  corpoHtml            String  @map("corpo_html") @db.Text
+  corpoTexto           String? @map("corpo_texto") @db.Text
+  variaveisDisponiveis Json?   @map("variaveis_disponiveis")
+  ativo                Boolean @default(true)
+
+  criadoEm     DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  regras       RegraCobranca[]
+  notificacoes Notificacao[]
+
+  @@map("modelos_email")
+}
+
+model ReguaCobranca {
+  id     String  @id @default(uuid()) @db.Char(36)
+  nome   String  @db.VarChar(100)
+  padrao Boolean @default(false)
+  ativa  Boolean @default(true)
+
+  criadoEm     DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  regras    RegraCobranca[]
+  contratos Contrato[]
+
+  @@index([padrao])
+  @@map("reguas_cobranca")
+}
+
+/// Cada etapa da regua. E aqui que a parametrizacao acontece.
+model RegraCobranca {
+  id        String @id @default(uuid()) @db.Char(36)
+  reguaId   String @map("regua_id") @db.Char(36)
+  sequencia Int
+
+  /// Negativo dispara antes do vencimento, 0 no dia, positivo em atraso.
+  diasOffset             Int  @map("dias_offset")
+  /// Nulo dispara uma unica vez.
+  intervaloRepeticaoDias Int? @map("intervalo_repeticao_dias")
+  maximoRepeticoes       Int? @map("maximo_repeticoes")
+
+  modeloEmailId String @map("modelo_email_id") @db.Char(36)
+
+  /// Formato HH:mm.
+  horaEnvio         String              @default("09:00") @map("hora_envio") @db.Char(5)
+  apenasSeSituacao  SituacaoLancamento? @map("apenas_se_situacao")
+  ativa             Boolean             @default(true)
+
+  regua        ReguaCobranca @relation(fields: [reguaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  modeloEmail  ModeloEmail   @relation(fields: [modeloEmailId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  notificacoes Notificacao[]
+
+  @@unique([reguaId, sequencia])
+  @@index([ativa])
+  @@map("regras_cobranca")
+}
+
+/// Fila de envio e log de auditoria na mesma tabela.
+model Notificacao {
+  id              String  @id @default(uuid()) @db.Char(36)
+  lancamentoId    String? @map("lancamento_id") @db.Char(36)
+  contratoId      String? @map("contrato_id") @db.Char(36)
+  regraCobrancaId String? @map("regra_cobranca_id") @db.Char(36)
+  modeloEmailId   String  @map("modelo_email_id") @db.Char(36)
+
+  /// 1 no primeiro disparo, incrementa a cada repeticao da mesma regra.
+  ocorrencia Int @default(1)
+
+  destinatario     String  @db.VarChar(150)
+  copia            String? @db.VarChar(500)
+  assunto          String  @db.VarChar(200)
+  corpoRenderizado String  @map("corpo_renderizado") @db.Text
+
+  agendadoPara DateTime            @map("agendado_para")
+  enviadoEm    DateTime?           @map("enviado_em")
+  situacao     SituacaoNotificacao @default(PENDENTE)
+  tentativas   Int                 @default(0)
+  mensagemErro String?             @map("mensagem_erro") @db.Text
+  idProvedor   String?             @map("id_provedor") @db.VarChar(200)
+
+  criadoEm DateTime @default(now()) @map("criado_em")
+
+  lancamento    Lancamento?    @relation(fields: [lancamentoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  contrato      Contrato?      @relation(fields: [contratoId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  regraCobranca RegraCobranca? @relation(fields: [regraCobrancaId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  modeloEmail   ModeloEmail    @relation(fields: [modeloEmailId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  /// Garantia de idempotencia: mesmo que o cron rode duas vezes,
+  /// o inquilino nao recebe cobranca duplicada.
+  @@unique([lancamentoId, regraCobrancaId, ocorrencia])
+  @@index([situacao, agendadoPara])
+  @@map("notificacoes")
+}
+
+model ChavePix {
+  id                 String       @id @default(uuid()) @db.Char(36)
+  tipoChave          TipoChavePix @map("tipo_chave")
+  chave              String       @db.VarChar(77)
+  /// Limite do padrao BR Code EMV.
+  nomeBeneficiario   String       @map("nome_beneficiario") @db.VarChar(25)
+  /// Limite do padrao BR Code EMV.
+  cidadeBeneficiario String       @map("cidade_beneficiario") @db.VarChar(15)
+  padrao             Boolean      @default(false)
+  ativa              Boolean      @default(true)
+
+  criadoEm     DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  contratos Contrato[]
+
+  @@index([padrao])
+  @@map("chaves_pix")
+}
+
+// ---------------------------------------------------------------------------
+// Bloco 5: Apoio
+// ---------------------------------------------------------------------------
+
+/// Relacionamento polimorfico, sem FK, apontando para objetos no MinIO.
+model Anexo {
+  id            String        @id @default(uuid()) @db.Char(36)
+  entidadeTipo  EntidadeAnexo @map("entidade_tipo")
+  entidadeId    String        @map("entidade_id") @db.Char(36)
+  especie       EspecieAnexo
+  bucket        String        @db.VarChar(63)
+  chaveObjeto   String        @map("chave_objeto") @db.VarChar(500)
+  nomeArquivo   String        @map("nome_arquivo") @db.VarChar(255)
+  tipoConteudo  String        @map("tipo_conteudo") @db.VarChar(100)
+  tamanhoBytes  BigInt        @map("tamanho_bytes")
+  checksum      String?       @db.VarChar(64)
+
+  criadoEm DateTime @default(now()) @map("criado_em")
+
+  @@index([entidadeTipo, entidadeId])
+  @@index([especie])
+  @@map("anexos")
+}
+
+/// Parametros de negocio. Credenciais ficam em variaveis de ambiente.
+model Configuracao {
+  chave     String           @id @db.VarChar(80)
+  valor     String           @db.Text
+  tipo      TipoConfiguracao @default(TEXTO)
+  grupo     String           @db.VarChar(50)
+  descricao String?          @db.VarChar(200)
+
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  @@index([grupo])
+  @@map("configuracoes")
+}
+
+model Usuario {
+  id        String        @id @default(uuid()) @db.Char(36)
+  nome      String        @db.VarChar(150)
+  email     String        @unique @db.VarChar(150)
+  senhaHash String        @map("senha_hash") @db.VarChar(255)
+  perfil    PerfilUsuario @default(ADMIN)
+  ativo     Boolean       @default(true)
+
+  criadoEm     DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  @@map("usuarios")
+}

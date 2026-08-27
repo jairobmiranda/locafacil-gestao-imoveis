@@ -39,6 +39,7 @@ RUN npm ci --omit=dev --ignore-scripts
 
 # Client gerado vem do builder porque o runner nao tem devDependencies.
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
 COPY --from=builder /app/packages/contracts/dist ./packages/contracts/dist
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/prisma ./prisma

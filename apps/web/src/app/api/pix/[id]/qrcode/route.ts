@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { API_URL } from '@/lib/configuracao';
 import { obterToken } from '@/lib/sessao';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api';
 
 export async function GET(
   requisicao: NextRequest,

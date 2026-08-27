@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation';
+import { API_URL } from './configuracao';
 import { obterToken } from './sessao';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api';
 
 export class ErroApi extends Error {
   constructor(

@@ -2,9 +2,9 @@
 
 import { redirect } from 'next/navigation';
 import type { RespostaLogin } from '@locafacil/contracts';
+import { API_URL } from '@/lib/configuracao';
 import { gravarToken, limparToken } from '@/lib/sessao';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api';
 const DURACAO_SESSAO_SEGUNDOS = 60 * 60 * 24 * 7;
 
 export type EstadoLogin = { erro?: string };

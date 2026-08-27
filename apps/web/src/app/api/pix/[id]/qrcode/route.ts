@@ -19,7 +19,12 @@ export async function GET(
   });
 
   if (!resposta.ok || !resposta.body) {
-    return NextResponse.json({ mensagem: 'QR Code indisponível' }, { status: resposta.status });
+    const detalhe = await resposta.text().catch(() => '');
+
+    return NextResponse.json(
+      { mensagem: 'QR Code indisponível', status: resposta.status, detalhe: detalhe.slice(0, 500) },
+      { status: resposta.status === 200 ? 502 : resposta.status },
+    );
   }
 
   return new NextResponse(resposta.body, {

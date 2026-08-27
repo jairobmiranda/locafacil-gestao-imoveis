@@ -2,6 +2,16 @@ import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nes
 import { Prisma } from '@prisma/client';
 import { map, Observable } from 'rxjs';
 
+/**
+ * Só objetos literais e arrays podem ser reconstruídos. Reconstruir um StreamableFile,
+ * Buffer ou stream destruiria a instância e o Nest deixaria de enviar o binário.
+ */
+function ehObjetoSimples(valor: object): boolean {
+  const prototipo = Object.getPrototypeOf(valor) as object | null;
+
+  return prototipo === Object.prototype || prototipo === null;
+}
+
 /** Decimal do Prisma vira string no JSON padrao e BigInt lanca excecao. Ambos viram number aqui. */
 function normalizar(valor: unknown): unknown {
   if (valor instanceof Prisma.Decimal) {
@@ -16,7 +26,7 @@ function normalizar(valor: unknown): unknown {
     return valor.map(normalizar);
   }
 
-  if (valor !== null && typeof valor === 'object' && !(valor instanceof Date)) {
+  if (valor !== null && typeof valor === 'object' && ehObjetoSimples(valor)) {
     return Object.fromEntries(
       Object.entries(valor as Record<string, unknown>).map(([chave, item]) => [
         chave,

@@ -502,7 +502,7 @@ input[type='file'] {
 }
 
 .linha-item {
-  align-items: end;
+  align-items: flex-end;
   padding-bottom: 12px;
   border-bottom: 1px dashed var(--borda);
   margin-bottom: 12px;
@@ -584,7 +584,7 @@ input[type='file'] {
 .linha-teste {
   display: flex;
   gap: 10px;
-  align-items: end;
+  align-items: flex-end;
 }
 
 .linha-teste .campo {
@@ -594,6 +594,165 @@ input[type='file'] {
 textarea[name='corpoHtml'] {
   font-family: ui-monospace, Consolas, monospace;
   font-size: 13px;
+}
+
+/* ----- Editor de HTML ----- */
+
+.editor-html {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.editor-abas {
+  display: flex;
+  gap: 2px;
+}
+
+.aba {
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 8px 8px 0 0;
+  padding: 5px 12px;
+  color: var(--texto-suave);
+}
+
+.aba:hover {
+  background: var(--fundo);
+}
+
+.aba.ativa {
+  background: var(--superficie);
+  border-color: var(--borda);
+  border-bottom-color: var(--superficie);
+  color: var(--texto);
+  font-weight: 500;
+  margin-bottom: -1px;
+}
+
+.editor-caixa {
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  background: var(--superficie);
+  overflow: hidden;
+}
+
+.editor-barra {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-wrap: wrap;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--borda);
+  background: #fbfcfd;
+}
+
+.ferramenta {
+  font: inherit;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 6px 9px;
+  min-width: 30px;
+  color: var(--texto);
+}
+
+.ferramenta:hover {
+  background: var(--fundo);
+}
+
+.ferramenta.ativa {
+  background: #e8f0fe;
+  border-color: #c3d8fb;
+  color: var(--primaria);
+}
+
+.seletor-variavel {
+  width: auto;
+  padding: 5px 8px;
+  font-size: 12px;
+  border: 1px solid var(--borda);
+  color: var(--texto-suave);
+}
+
+.editor-divisor {
+  width: 1px;
+  height: 18px;
+  background: var(--borda);
+  margin: 0 4px;
+}
+
+.editor-area {
+  min-height: 300px;
+  max-height: 520px;
+  overflow-y: auto;
+  padding: 16px 18px;
+  outline: none;
+  color: var(--texto);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.editor-area:focus {
+  outline: none;
+}
+
+.editor-area > *:first-child {
+  margin-top: 0;
+}
+
+.editor-area > *:last-child {
+  margin-bottom: 0;
+}
+
+.editor-area p {
+  margin: 0 0 12px;
+}
+
+.editor-area h1 {
+  font-size: 20px;
+  margin: 20px 0 10px;
+}
+
+.editor-area h2 {
+  font-size: 16px;
+  margin: 18px 0 8px;
+}
+
+.editor-area ul,
+.editor-area ol {
+  margin: 0 0 12px;
+  padding-left: 22px;
+}
+
+.editor-area hr {
+  border: none;
+  border-top: 1px solid var(--borda);
+  margin: 18px 0;
+}
+
+.editor-area a {
+  color: var(--primaria);
+  text-decoration: underline;
+}
+
+/* Destaca as variaveis no meio do texto. */
+.editor-area,
+.editor-codigo {
+  tab-size: 2;
+}
+
+.editor-codigo {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  min-height: 300px;
 }
 
 /* Linha de projecao, ainda nao realizada. */

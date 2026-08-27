@@ -3,6 +3,7 @@
 import { useActionState, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import { removerModelo, salvarModelo, type EstadoFormulario } from '../acoes';
+import { EditorHtml } from './editor-html';
 
 type Modelo = {
   id: string;
@@ -108,10 +109,14 @@ export function EditorModelos({
             <input name="assunto" defaultValue={modelo?.assunto} required maxLength={200} />
           </label>
 
-          <label className="campo">
-            Corpo (HTML)
-            <textarea name="corpoHtml" rows={14} defaultValue={modelo?.corpoHtml} required />
-          </label>
+          <div className="campo">
+            Corpo do e-mail
+            <EditorHtml
+              nome="corpoHtml"
+              valorInicial={modelo?.corpoHtml ?? '<p></p>'}
+              variaveis={variaveis}
+            />
+          </div>
 
           <label className="campo-inline">
             <input type="checkbox" name="ativo" defaultChecked={modelo?.ativo ?? true} />

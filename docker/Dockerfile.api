@@ -36,7 +36,9 @@ COPY package.json package-lock.json ./
 COPY apps/api/package.json apps/api/
 COPY apps/web/package.json apps/web/
 COPY packages/contracts/package.json packages/contracts/
-RUN npm ci --omit=dev --ignore-scripts
+# Sem --ignore-scripts: o postinstall do prisma baixa os engines aqui, como root.
+# Em runtime o usuario nestjs nao tem permissao de escrita em node_modules.
+RUN npm ci --omit=dev
 
 # Client gerado vem do builder porque o runner nao tem devDependencies.
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
@@ -45,6 +47,8 @@ COPY --from=builder /app/packages/contracts/dist ./packages/contracts/dist
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./
+
+RUN chown -R nestjs:nodejs /app
 
 USER nestjs
 EXPOSE 3000

@@ -573,12 +573,29 @@ input[type='file'] {
   margin-top: 10px;
 }
 
-.variaveis code {
+.variavel {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.4;
+  cursor: pointer;
   background: var(--fundo);
   border: 1px solid var(--borda);
   border-radius: 6px;
-  padding: 3px 7px;
-  font-size: 12px;
+  padding: 4px 8px;
+  color: var(--texto);
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.variavel:hover {
+  background: #e8f0fe;
+  border-color: #c3d8fb;
+  color: var(--primaria);
+}
+
+.variavel.copiada {
+  background: #e7f6ec;
+  border-color: #bce3c9;
+  color: var(--positivo);
 }
 
 .linha-teste {

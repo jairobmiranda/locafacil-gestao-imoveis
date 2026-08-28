@@ -4,6 +4,7 @@ import { useActionState, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import { removerModelo, salvarModelo, type EstadoFormulario } from '../acoes';
 import { EditorHtml } from './editor-html';
+import { ListaVariaveis } from './lista-variaveis';
 
 type Modelo = {
   id: string;
@@ -142,17 +143,7 @@ export function EditorModelos({
           </div>
         </form>
 
-        <div className="cartao">
-          <h2>Variáveis disponíveis</h2>
-          <p className="texto-suave">
-            Escreva no corpo ou no assunto. Os valores são inseridos no momento do agendamento.
-          </p>
-          <div className="variaveis">
-            {variaveis.map((variavel) => (
-              <code key={variavel}>{`{{${variavel}}}`}</code>
-            ))}
-          </div>
-        </div>
+        <ListaVariaveis variaveis={variaveis} />
       </div>
     </div>
   );

@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react';
+import type { UsuarioAutenticado } from '@locafacil/contracts';
+import { apiGet } from '@/lib/api';
 import { LinkNavegacao } from '../link-navegacao';
 
 const ABAS = [
@@ -6,20 +8,24 @@ const ABAS = [
   { href: '/configuracoes/modelos', rotulo: 'Modelos de e-mail' },
   { href: '/configuracoes/regua', rotulo: 'Régua de cobrança' },
   { href: '/configuracoes/notificacoes', rotulo: 'Envios' },
+  { href: '/configuracoes/usuarios', rotulo: 'Usuários', somenteAdmin: true },
 ];
 
-export default function LayoutConfiguracoes({ children }: { children: ReactNode }) {
+export default async function LayoutConfiguracoes({ children }: { children: ReactNode }) {
+  const usuario = await apiGet<UsuarioAutenticado>('/auth/eu');
+  const abas = ABAS.filter((aba) => !aba.somenteAdmin || usuario.perfil === 'ADMIN');
+
   return (
     <>
       <div className="cabecalho-pagina">
         <div>
           <h1>Configurações</h1>
-          <p className="texto-suave">Pix, modelos de e-mail e automação da cobrança</p>
+          <p className="texto-suave">Pix, modelos de e-mail, automação da cobrança e usuários</p>
         </div>
       </div>
 
       <nav className="abas">
-        {ABAS.map((aba) => (
+        {abas.map((aba) => (
           <LinkNavegacao key={aba.href} href={aba.href}>
             {aba.rotulo}
           </LinkNavegacao>

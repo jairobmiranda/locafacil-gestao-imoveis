@@ -7,3 +7,4 @@ export * from './imovel';
 export * from './lancamento';
 export * from './pessoa';
 export * from './pix';
+export * from './usuario';

@@ -191,3 +191,53 @@ export async function reenviarNotificacao(id: string): Promise<void> {
   await apiPost(`/cobranca/notificacoes/${id}/reenviar`);
   revalidatePath('/configuracoes/notificacoes');
 }
+
+// ----- Usuarios -----
+
+export async function criarUsuario(
+  _anterior: EstadoFormulario,
+  dados: FormData,
+): Promise<EstadoFormulario> {
+  try {
+    await apiPost('/usuarios', {
+      nome: String(dados.get('nome') ?? '').trim(),
+      email: String(dados.get('email') ?? '').trim(),
+      senha: String(dados.get('senha') ?? ''),
+      perfil: String(dados.get('perfil') ?? 'OPERADOR'),
+      ativo: true,
+    });
+  } catch (erro) {
+    return traduzir(erro);
+  }
+
+  revalidatePath('/configuracoes/usuarios');
+
+  return { sucesso: 'Usuário cadastrado' };
+}
+
+export async function alternarUsuarioAtivo(id: string, ativo: boolean): Promise<void> {
+  await apiPatch(`/usuarios/${id}`, { ativo });
+  revalidatePath('/configuracoes/usuarios');
+}
+
+export async function alterarPerfilUsuario(id: string, perfil: string): Promise<void> {
+  await apiPatch(`/usuarios/${id}`, { perfil });
+  revalidatePath('/configuracoes/usuarios');
+}
+
+export async function redefinirSenhaUsuario(
+  _anterior: EstadoFormulario,
+  dados: FormData,
+): Promise<EstadoFormulario> {
+  try {
+    await apiPatch(`/usuarios/${String(dados.get('id') ?? '')}`, {
+      senha: String(dados.get('senha') ?? ''),
+    });
+  } catch (erro) {
+    return traduzir(erro);
+  }
+
+  revalidatePath('/configuracoes/usuarios');
+
+  return { sucesso: 'Senha redefinida' };
+}

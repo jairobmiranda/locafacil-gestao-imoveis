@@ -16,6 +16,7 @@ import { PessoasModule } from './pessoas/pessoas.module';
 import { PixModule } from './pix/pix.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { SaudeController } from './saude/saude.controller';
+import { UsuariosModule } from './usuarios/usuarios.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { SaudeController } from './saude/saude.controller';
     LancamentosModule,
     PessoasModule,
     PixModule,
+    UsuariosModule,
   ],
   controllers: [SaudeController],
   providers: [

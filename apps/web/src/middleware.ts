@@ -22,5 +22,8 @@ export function middleware(requisicao: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  // Os arquivos do PWA precisam responder antes do login, senao o navegador nao instala o app.
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|offline.html|.*\\.png).*)',
+  ],
 };

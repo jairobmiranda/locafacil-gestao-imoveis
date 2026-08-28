@@ -140,16 +140,16 @@ export function PainelEnvios({
                 {notificacoes.map((notificacao) => (
                   <tr key={notificacao.id}>
                     <td>{notificacao.destinatario}</td>
-                    <td>
+                    <td data-label="Assunto">
                       {notificacao.assunto}
                       {notificacao.ocorrencia > 1 ? ` (${notificacao.ocorrencia}ª cobrança)` : ''}
                       {notificacao.mensagemErro ? (
                         <small className="texto-suave">{notificacao.mensagemErro}</small>
                       ) : null}
                     </td>
-                    <td>{formatarData(notificacao.agendadoPara)}</td>
-                    <td>{formatarData(notificacao.enviadoEm)}</td>
-                    <td>
+                    <td data-label="Agendado">{formatarData(notificacao.agendadoPara)}</td>
+                    <td data-label="Enviado">{formatarData(notificacao.enviadoEm)}</td>
+                    <td data-label="Situação">
                       <span className={`etiqueta situacao-${notificacao.situacao.toLowerCase()}`}>
                         {notificacao.situacao}
                       </span>

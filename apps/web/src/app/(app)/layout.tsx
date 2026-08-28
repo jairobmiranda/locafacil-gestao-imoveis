@@ -4,14 +4,32 @@ import type { UsuarioAutenticado } from '@locafacil/contracts';
 import { apiGet } from '@/lib/api';
 import { sair } from '../login/acoes';
 import { LinkNavegacao } from './link-navegacao';
+import {
+  IconeConfiguracoes,
+  IconeContratos,
+  IconeImoveis,
+  IconeLancamentos,
+  IconePessoas,
+  IconeVisaoGeral,
+} from './icones';
 
 const MENU = [
-  { href: '/dashboard', rotulo: 'Visão geral' },
-  { href: '/imoveis', rotulo: 'Imóveis' },
-  { href: '/lancamentos', rotulo: 'Lançamentos' },
-  { href: '/contratos', rotulo: 'Contratos' },
-  { href: '/pessoas', rotulo: 'Pessoas' },
-  { href: '/configuracoes', rotulo: 'Configurações' },
+  { href: '/dashboard', rotulo: 'Visão geral', rotuloCurto: 'Início', Icone: IconeVisaoGeral },
+  { href: '/imoveis', rotulo: 'Imóveis', rotuloCurto: 'Imóveis', Icone: IconeImoveis },
+  {
+    href: '/lancamentos',
+    rotulo: 'Lançamentos',
+    rotuloCurto: 'Lanç.',
+    Icone: IconeLancamentos,
+  },
+  { href: '/contratos', rotulo: 'Contratos', rotuloCurto: 'Contratos', Icone: IconeContratos },
+  { href: '/pessoas', rotulo: 'Pessoas', rotuloCurto: 'Pessoas', Icone: IconePessoas },
+  {
+    href: '/configuracoes',
+    rotulo: 'Configurações',
+    rotuloCurto: 'Config.',
+    Icone: IconeConfiguracoes,
+  },
 ];
 
 export default async function LayoutApp({ children }: { children: ReactNode }) {
@@ -24,10 +42,10 @@ export default async function LayoutApp({ children }: { children: ReactNode }) {
           LocaFácil
         </Link>
 
-        <nav className="menu">
-          {MENU.map((item) => (
-            <LinkNavegacao key={item.href} href={item.href}>
-              {item.rotulo}
+        <nav className="menu" aria-label="Navegação principal">
+          {MENU.map(({ href, rotulo, Icone }) => (
+            <LinkNavegacao key={href} href={href} icone={<Icone />}>
+              {rotulo}
             </LinkNavegacao>
           ))}
         </nav>
@@ -41,6 +59,16 @@ export default async function LayoutApp({ children }: { children: ReactNode }) {
       </header>
 
       <main className="conteudo">{children}</main>
+
+      <div className="barra-abas">
+        <nav aria-label="Navegação principal">
+          {MENU.map(({ href, rotuloCurto, Icone }) => (
+            <LinkNavegacao key={href} href={href} variante="aba" icone={<Icone />}>
+              {rotuloCurto}
+            </LinkNavegacao>
+          ))}
+        </nav>
+      </div>
     </div>
   );
 }

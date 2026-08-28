@@ -69,15 +69,17 @@ export default async function PaginaImoveis({
                       {imovel.apelido}
                     </Link>
                   </td>
-                  <td>
+                  <td data-label="Estratégia">
                     <span className={`etiqueta estrategia-${imovel.estrategia.toLowerCase()}`}>
                       {rotular(imovel.estrategia)}
                     </span>
                   </td>
-                  <td>{rotular(imovel.situacao)}</td>
-                  <td>{imovel.cidade ?? '-'}</td>
-                  <td className="direita">{formatarMoeda(imovel.valorAquisicao)}</td>
-                  <td className="direita">
+                  <td data-label="Situação">{rotular(imovel.situacao)}</td>
+                  <td data-label="Cidade">{imovel.cidade ?? '-'}</td>
+                  <td className="direita" data-label="Aquisição">
+                    {formatarMoeda(imovel.valorAquisicao)}
+                  </td>
+                  <td className="direita" data-label="Alvo">
                     {imovel.estrategia === 'LOCACAO'
                       ? formatarMoeda(imovel.aluguelAlvo)
                       : formatarMoeda(imovel.valorVendaAlvo)}

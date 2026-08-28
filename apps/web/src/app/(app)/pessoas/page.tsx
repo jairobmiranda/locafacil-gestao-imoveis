@@ -64,10 +64,12 @@ export default async function PaginaPessoas({
                       {pessoa.nome}
                     </Link>
                   </td>
-                  <td>{formatarDocumento(pessoa.documento)}</td>
-                  <td>{pessoa.email ?? <span className="texto-suave">sem e-mail</span>}</td>
-                  <td>{pessoa.telefone ?? '-'}</td>
-                  <td>{pessoa.cidade ?? '-'}</td>
+                  <td data-label="Documento">{formatarDocumento(pessoa.documento)}</td>
+                  <td data-label="E-mail">
+                    {pessoa.email ?? <span className="texto-suave">sem e-mail</span>}
+                  </td>
+                  <td data-label="Telefone">{pessoa.telefone ?? '-'}</td>
+                  <td data-label="Cidade">{pessoa.cidade ?? '-'}</td>
                 </tr>
               ))}
             </tbody>

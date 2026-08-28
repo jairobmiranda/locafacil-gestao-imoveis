@@ -58,20 +58,24 @@ export default async function PaginaPessoa({ params }: { params: Promise<{ id: s
                         {vinculo.contrato.imovel.apelido}
                       </Link>
                     </td>
-                    <td>
+                    <td data-label="Papel">
                       {rotular(vinculo.papel)}
                       {vinculo.contatoPrincipal ? ' (contato)' : ''}
                     </td>
-                    <td>
+                    <td data-label="Vigência">
                       {formatarData(vinculo.contrato.dataInicio)} a{' '}
                       {formatarData(vinculo.contrato.dataFim)}
                     </td>
-                    <td>
-                      <span className={`etiqueta situacao-${vinculo.contrato.situacao.toLowerCase()}`}>
+                    <td data-label="Situação">
+                      <span
+                        className={`etiqueta situacao-${vinculo.contrato.situacao.toLowerCase()}`}
+                      >
                         {rotular(vinculo.contrato.situacao)}
                       </span>
                     </td>
-                    <td className="direita">{formatarMoeda(vinculo.contrato.valorAluguel)}</td>
+                    <td className="direita" data-label="Aluguel">
+                      {formatarMoeda(vinculo.contrato.valorAluguel)}
+                    </td>
                   </tr>
                 ))}
               </tbody>

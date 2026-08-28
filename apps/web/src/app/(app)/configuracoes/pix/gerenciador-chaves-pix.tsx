@@ -82,13 +82,13 @@ export function GerenciadorChavesPix({ chaves }: { chaves: ChavePix[] }) {
             <tbody>
               {chaves.map((chave) => (
                 <tr key={chave.id} className={chave.ativa ? undefined : 'inativo'}>
-                  <td>{chave.tipoChave}</td>
-                  <td>
+                  <td data-label="Tipo">{chave.tipoChave}</td>
+                  <td data-label="Chave">
                     {chave.chave}
                     {chave.padrao ? <span className="etiqueta situacao-ativo"> padrão</span> : null}
                   </td>
-                  <td>{chave.nomeBeneficiario}</td>
-                  <td>{chave.cidadeBeneficiario}</td>
+                  <td data-label="Beneficiário">{chave.nomeBeneficiario}</td>
+                  <td data-label="Cidade">{chave.cidadeBeneficiario}</td>
                   <td className="direita acoes-linha">
                     {!chave.padrao && chave.ativa ? (
                       <button

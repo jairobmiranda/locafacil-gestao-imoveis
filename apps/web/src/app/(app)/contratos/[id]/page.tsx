@@ -99,11 +99,13 @@ export default async function PaginaContrato({ params }: { params: Promise<{ id:
                       {parte.pessoa.nome}
                     </Link>
                   </td>
-                  <td>
+                  <td data-label="Papel">
                     {rotular(parte.papel)}
                     {parte.contatoPrincipal ? ' · contato principal' : ''}
                   </td>
-                  <td>{parte.pessoa.email ?? <span className="texto-suave">sem e-mail</span>}</td>
+                  <td data-label="E-mail">
+                    {parte.pessoa.email ?? <span className="texto-suave">sem e-mail</span>}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -122,8 +124,10 @@ export default async function PaginaContrato({ params }: { params: Promise<{ id:
                 {contrato.itens.map((item) => (
                   <tr key={item.id}>
                     <td>{item.descricao}</td>
-                    <td>{item.categoria.nome}</td>
-                    <td className="direita">{formatarMoeda(item.valor)}</td>
+                    <td data-label="Categoria">{item.categoria.nome}</td>
+                    <td className="direita" data-label="Valor">
+                      {formatarMoeda(item.valor)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -164,14 +168,18 @@ export default async function PaginaContrato({ params }: { params: Promise<{ id:
                         {formatarCompetencia(cobranca.competencia)}
                       </Link>
                     </td>
-                    <td>{formatarData(cobranca.vencimento)}</td>
-                    <td>
+                    <td data-label="Vencimento">{formatarData(cobranca.vencimento)}</td>
+                    <td data-label="Situação">
                       <span className={`etiqueta situacao-${cobranca.situacao.toLowerCase()}`}>
                         {rotular(cobranca.situacao)}
                       </span>
                     </td>
-                    <td className="direita">{formatarMoeda(cobranca.valor)}</td>
-                    <td className="direita">{formatarMoeda(cobranca.valorPago)}</td>
+                    <td className="direita" data-label="Valor">
+                      {formatarMoeda(cobranca.valor)}
+                    </td>
+                    <td className="direita" data-label="Pago">
+                      {formatarMoeda(cobranca.valorPago)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -185,7 +193,7 @@ export default async function PaginaContrato({ params }: { params: Promise<{ id:
           <h2>Condições</h2>
         </div>
         <div className="cartao">
-          <table className="tabela">
+          <table className="tabela-dados">
             <tbody>
               <tr>
                 <td>Multa por atraso</td>

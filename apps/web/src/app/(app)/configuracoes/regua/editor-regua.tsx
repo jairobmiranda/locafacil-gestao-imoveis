@@ -114,11 +114,11 @@ export function EditorRegua({
             <tbody>
               {regua.regras.map((regra) => (
                 <tr key={regra.id} className={regra.ativa ? undefined : 'inativo'}>
-                  <td>{regra.sequencia}</td>
-                  <td>{descreverMomento(regra)}</td>
-                  <td>{regra.modeloEmail.nome}</td>
-                  <td>{regra.horaEnvio}</td>
-                  <td>{regra.apenasSeSituacao ?? 'qualquer'}</td>
+                  <td data-label="#">{regra.sequencia}</td>
+                  <td data-label="Quando">{descreverMomento(regra)}</td>
+                  <td data-label="Modelo">{regra.modeloEmail.nome}</td>
+                  <td data-label="Hora">{regra.horaEnvio}</td>
+                  <td data-label="Condição">{regra.apenasSeSituacao ?? 'qualquer'}</td>
                   <td className="direita acoes-linha">
                     <button
                       type="button"

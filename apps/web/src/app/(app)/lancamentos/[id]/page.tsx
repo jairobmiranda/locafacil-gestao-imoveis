@@ -114,7 +114,9 @@ export default async function PaginaLancamento({ params }: { params: Promise<{ i
                 {lancamento.itens.map((item) => (
                   <tr key={item.id}>
                     <td>{item.descricao}</td>
-                    <td className="direita">{formatarMoeda(item.valor)}</td>
+                    <td className="direita" data-label="Valor">
+                      {formatarMoeda(item.valor)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -178,9 +180,11 @@ export default async function PaginaLancamento({ params }: { params: Promise<{ i
                         {anexo.nomeArquivo}
                       </a>
                     </td>
-                    <td>{rotular(anexo.especie)}</td>
-                    <td>{formatarData(anexo.criadoEm)}</td>
-                    <td className="direita">{Math.round(anexo.tamanhoBytes / 1024)} KB</td>
+                    <td data-label="Espécie">{rotular(anexo.especie)}</td>
+                    <td data-label="Enviado">{formatarData(anexo.criadoEm)}</td>
+                    <td className="direita" data-label="Tamanho">
+                      {Math.round(anexo.tamanhoBytes / 1024)} KB
+                    </td>
                   </tr>
                 ))}
               </tbody>

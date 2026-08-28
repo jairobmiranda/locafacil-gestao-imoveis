@@ -51,18 +51,20 @@ export default async function PaginaContratos() {
                         {contrato.imovel.apelido}
                       </Link>
                     </td>
-                    <td>{inquilino?.pessoa.nome ?? '-'}</td>
-                    <td>
+                    <td data-label="Inquilino">{inquilino?.pessoa.nome ?? '-'}</td>
+                    <td data-label="Vigência">
                       {formatarData(contrato.dataInicio)} a {formatarData(contrato.dataFim)}
                     </td>
-                    <td>dia {contrato.diaVencimento}</td>
-                    <td>
+                    <td data-label="Venc.">dia {contrato.diaVencimento}</td>
+                    <td data-label="Situação">
                       <span className={`etiqueta situacao-${contrato.situacao.toLowerCase()}`}>
                         {rotular(contrato.situacao)}
                       </span>
                     </td>
-                    <td>{formatarData(contrato.proximoReajusteEm)}</td>
-                    <td className="direita">{formatarMoeda(contrato.valorAluguel)}</td>
+                    <td data-label="Reajuste">{formatarData(contrato.proximoReajusteEm)}</td>
+                    <td className="direita" data-label="Aluguel">
+                      {formatarMoeda(contrato.valorAluguel)}
+                    </td>
                   </tr>
                 );
               })}

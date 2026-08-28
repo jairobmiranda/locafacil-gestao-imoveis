@@ -77,8 +77,8 @@ export default async function PaginaImovel({ params }: { params: Promise<{ id: s
             <table className="tabela">
               <thead>
                 <tr>
-                  <th>Competência</th>
                   <th>Descrição</th>
+                  <th>Competência</th>
                   <th>Categoria</th>
                   <th>Situação</th>
                   <th className="direita">Valor</th>
@@ -87,14 +87,16 @@ export default async function PaginaImovel({ params }: { params: Promise<{ id: s
               <tbody>
                 {lancamentos.itens.map((lancamento) => (
                   <tr key={lancamento.id}>
-                    <td>{formatarCompetencia(lancamento.competencia)}</td>
                     <td>
                       <Link href={`/lancamentos/${lancamento.id}`} className="link">
                         {lancamento.descricao}
                       </Link>
                     </td>
-                    <td>{lancamento.categoria.nome}</td>
-                    <td>
+                    <td data-label="Competência">
+                      {formatarCompetencia(lancamento.competencia)}
+                    </td>
+                    <td data-label="Categoria">{lancamento.categoria.nome}</td>
+                    <td data-label="Situação">
                       <span className={`etiqueta situacao-${lancamento.situacao.toLowerCase()}`}>
                         {rotular(lancamento.situacao)}
                       </span>
@@ -103,6 +105,7 @@ export default async function PaginaImovel({ params }: { params: Promise<{ id: s
                       className={
                         lancamento.natureza === 'ENTRADA' ? 'direita positivo' : 'direita negativo'
                       }
+                      data-label="Valor"
                     >
                       {lancamento.natureza === 'ENTRADA' ? '+' : '-'}
                       {formatarMoeda(lancamento.valor)}

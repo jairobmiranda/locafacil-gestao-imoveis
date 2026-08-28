@@ -130,19 +130,31 @@ export default async function PaginaDashboard() {
                         {imovel.apelido}
                       </Link>
                     </td>
-                    <td className="direita">{formatarMoeda(imovel.custoTotal)}</td>
-                    <td className={imovel.liquido12m && imovel.liquido12m >= 0 ? 'direita positivo' : 'direita negativo'}>
+                    <td className="direita" data-label="Custo total">
+                      {formatarMoeda(imovel.custoTotal)}
+                    </td>
+                    <td
+                      className={
+                        imovel.liquido12m && imovel.liquido12m >= 0
+                          ? 'direita positivo'
+                          : 'direita negativo'
+                      }
+                      data-label="Líquido 12m"
+                    >
                       {formatarMoeda(imovel.liquido12m)}
                     </td>
-                    <td className="direita">
+                    <td className="direita" data-label="Yield anual">
                       <strong>{percentual(imovel.yieldLiquidoAnual, 2)}</strong>
                     </td>
-                    <td className="direita">
+                    <td className="direita" data-label="Payback">
                       {imovel.paybackMeses
                         ? `${Math.floor(imovel.paybackMeses / 12)} a ${imovel.paybackMeses % 12} m`
                         : '-'}
                     </td>
-                    <td className={imovel.emAtraso > 0 ? 'direita negativo' : 'direita'}>
+                    <td
+                      className={imovel.emAtraso > 0 ? 'direita negativo' : 'direita'}
+                      data-label="Em atraso"
+                    >
                       {imovel.emAtraso > 0 ? formatarMoeda(imovel.emAtraso) : '-'}
                     </td>
                   </tr>
@@ -182,20 +194,27 @@ export default async function PaginaDashboard() {
                         {imovel.apelido}
                       </Link>
                     </td>
-                    <td>{rotular(imovel.situacao)}</td>
-                    <td className="direita">{formatarMoeda(imovel.custoTotal)}</td>
+                    <td data-label="Situação">{rotular(imovel.situacao)}</td>
+                    <td className="direita" data-label="Custo total">
+                      {formatarMoeda(imovel.custoTotal)}
+                    </td>
                     <td
                       className={
                         imovel.lucro !== null && imovel.lucro >= 0
                           ? 'direita positivo'
                           : 'direita negativo'
                       }
+                      data-label="Lucro"
                     >
                       {formatarMoeda(imovel.lucro)}
                     </td>
-                    <td className="direita">{percentual(imovel.roi)}</td>
-                    <td className="direita">{imovel.mesesDecorridos ?? '-'}</td>
-                    <td className="direita">
+                    <td className="direita" data-label="ROI">
+                      {percentual(imovel.roi)}
+                    </td>
+                    <td className="direita" data-label="Meses">
+                      {imovel.mesesDecorridos ?? '-'}
+                    </td>
+                    <td className="direita" data-label="Retorno ao mês">
                       <strong>{percentual(imovel.retornoMensal, 2)}</strong>
                     </td>
                   </tr>
@@ -219,25 +238,27 @@ export default async function PaginaDashboard() {
             <table className="tabela">
               <thead>
                 <tr>
+                  <th>Descrição</th>
                   <th>Vencimento</th>
                   <th>Imóvel</th>
                   <th>Inquilino</th>
-                  <th>Descrição</th>
                   <th className="direita">Valor</th>
                 </tr>
               </thead>
               <tbody>
                 {alertas.cobrancas.map((cobranca) => (
                   <tr key={cobranca.id}>
-                    <td>{formatarData(cobranca.vencimento)}</td>
-                    <td>{cobranca.imovel.apelido}</td>
-                    <td>{cobranca.pessoa?.nome ?? '-'}</td>
                     <td>
                       <Link href={`/lancamentos/${cobranca.id}`} className="link">
                         {cobranca.descricao}
                       </Link>
                     </td>
-                    <td className="direita negativo">{formatarMoeda(cobranca.valor)}</td>
+                    <td data-label="Vencimento">{formatarData(cobranca.vencimento)}</td>
+                    <td data-label="Imóvel">{cobranca.imovel.apelido}</td>
+                    <td data-label="Inquilino">{cobranca.pessoa?.nome ?? '-'}</td>
+                    <td className="direita negativo" data-label="Valor">
+                      {formatarMoeda(cobranca.valor)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -273,9 +294,9 @@ export default async function PaginaDashboard() {
                         {contrato.imovel.apelido}
                       </Link>
                     </td>
-                    <td>{formatarData(contrato.dataFim)}</td>
-                    <td>{formatarData(contrato.proximoReajusteEm)}</td>
-                    <td>{contrato.indiceReajuste}</td>
+                    <td data-label="Fim do contrato">{formatarData(contrato.dataFim)}</td>
+                    <td data-label="Próximo reajuste">{formatarData(contrato.proximoReajusteEm)}</td>
+                    <td data-label="Índice">{contrato.indiceReajuste}</td>
                   </tr>
                 ))}
               </tbody>

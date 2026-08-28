@@ -9,7 +9,7 @@ type ChavePix = { id: string; tipoChave: string; chave: string; ativa: boolean }
 export default async function PaginaNovoContrato() {
   const [imoveis, pessoas, categorias, chaves] = await Promise.all([
     apiGet<Paginado<Imovel>>('/imoveis', { limite: 100 }),
-    apiGet<Paginado<Pessoa>>('/pessoas', { limite: 200 }),
+    apiGet<Paginado<Pessoa>>('/pessoas', { limite: 100 }),
     apiGet<Categoria[]>('/categorias', { natureza: 'ENTRADA' }),
     apiGet<ChavePix[]>('/pix/chaves'),
   ]);

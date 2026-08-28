@@ -52,9 +52,15 @@ export async function api<T>(caminho: string, opcoes: Opcoes = {}): Promise<T> {
   const corpo = await resposta.json().catch(() => null);
 
   if (!resposta.ok) {
+    const detalhe = Array.isArray(corpo?.erros)
+      ? corpo.erros.map((item: { campo: string; erro: string }) => `${item.campo}: ${item.erro}`).join('; ')
+      : '';
+
     throw new ErroApi(
       resposta.status,
-      corpo?.mensagem ?? corpo?.message ?? 'Não foi possível concluir a operação',
+      [corpo?.mensagem ?? corpo?.message ?? 'Não foi possível concluir a operação', detalhe]
+        .filter(Boolean)
+        .join(' — '),
       corpo?.erros,
     );
   }

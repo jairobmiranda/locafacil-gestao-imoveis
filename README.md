@@ -108,7 +108,7 @@ Todas estão documentadas em `.env.example`. Resumo dos grupos:
 | MinIO | `MINIO_ENDPOINT`, `MINIO_PORT`, `MINIO_USE_SSL`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_BUCKET` |
 | E-mail | `EMAIL_ENVIO_ATIVO`, `EMAIL_LOTE`, `SMTP_*`, `EMAIL_REPLY_TO` |
 | Agendadores | `CRONS_ATIVOS`, `CRON_GERAR_COBRANCAS`, `CRON_MARCAR_ATRASO`, `CRON_REGUA_COBRANCA`, `CRON_ENVIO_EMAIL` |
-| Web | `NEXT_PUBLIC_API_URL` |
+| Web | `API_URL` |
 
 Observações:
 

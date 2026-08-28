@@ -15,7 +15,8 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 ENV NODE_OPTIONS=--max-old-space-size=2048
 ENV NEXT_TELEMETRY_DISABLED=1
-COPY --from=deps /app/node_modules ./node_modules
+# /app inteiro: o npm cria os symlinks de .bin dentro do node_modules de cada workspace.
+COPY --from=deps /app ./
 COPY . .
 RUN npm run build -w packages/contracts \
   && npm run build -w apps/web

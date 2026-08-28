@@ -1,5 +1,6 @@
 export * from './anexo';
 export * from './auth';
+export * from './categoria';
 export * from './cobranca';
 export * from './comum';
 export * from './contrato';

@@ -65,6 +65,52 @@ export async function removerChavePix(id: string): Promise<void> {
   revalidatePath('/configuracoes/pix');
 }
 
+// ----- Categorias -----
+
+export async function salvarCategoria(
+  _anterior: EstadoFormulario,
+  dados: FormData,
+): Promise<EstadoFormulario> {
+  const id = texto(dados.get('id'));
+
+  const corpo = {
+    nome: String(dados.get('nome') ?? '').trim(),
+    categoriaPaiId: texto(dados.get('categoriaPaiId')) ?? null,
+    capitalizavelPadrao: dados.get('capitalizavelPadrao') === 'on',
+    codigoFiscal: texto(dados.get('codigoFiscal')) ?? null,
+  };
+
+  try {
+    if (id) {
+      await apiPatch(`/categorias/${id}`, corpo);
+    } else {
+      await apiPost('/categorias', {
+        ...corpo,
+        categoriaPaiId: corpo.categoriaPaiId ?? undefined,
+        codigoFiscal: corpo.codigoFiscal ?? undefined,
+        natureza: String(dados.get('natureza') ?? 'SAIDA'),
+        ativa: true,
+      });
+    }
+  } catch (erro) {
+    return traduzir(erro);
+  }
+
+  revalidatePath('/configuracoes/categorias');
+
+  return { sucesso: id ? 'Categoria atualizada' : 'Categoria cadastrada' };
+}
+
+export async function alternarCategoriaAtiva(id: string, ativa: boolean): Promise<void> {
+  await apiPatch(`/categorias/${id}`, { ativa });
+  revalidatePath('/configuracoes/categorias');
+}
+
+export async function removerCategoria(id: string): Promise<void> {
+  await apiDelete(`/categorias/${id}`);
+  revalidatePath('/configuracoes/categorias');
+}
+
 // ----- Modelos de e-mail -----
 
 export async function salvarModelo(

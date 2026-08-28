@@ -5,6 +5,7 @@ import { LinkNavegacao } from '../link-navegacao';
 
 const ABAS = [
   { href: '/configuracoes/pix', rotulo: 'Chaves Pix' },
+  { href: '/configuracoes/categorias', rotulo: 'Categorias' },
   { href: '/configuracoes/modelos', rotulo: 'Modelos de e-mail' },
   { href: '/configuracoes/regua', rotulo: 'Régua de cobrança' },
   { href: '/configuracoes/notificacoes', rotulo: 'Envios' },
@@ -20,7 +21,9 @@ export default async function LayoutConfiguracoes({ children }: { children: Reac
       <div className="cabecalho-pagina">
         <div>
           <h1>Configurações</h1>
-          <p className="texto-suave">Pix, modelos de e-mail, automação da cobrança e usuários</p>
+          <p className="texto-suave">
+            Pix, categorias, modelos de e-mail, automação da cobrança e usuários
+          </p>
         </div>
       </div>
 

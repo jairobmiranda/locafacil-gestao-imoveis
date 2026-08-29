@@ -622,8 +622,17 @@ a {
   align-items: flex-end;
 }
 
+/* Campos nascem com width:100%, o que jogaria cada filtro para uma linha. */
+.filtros > select,
+.filtros > input,
+.filtros > .campo {
+  width: auto;
+  flex: 0 1 auto;
+  min-width: 168px;
+}
+
 .filtros input[type='search'] {
-  flex: 1;
+  flex: 1 1 260px;
   min-width: 220px;
 }
 

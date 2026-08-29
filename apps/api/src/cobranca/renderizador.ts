@@ -21,6 +21,19 @@ function escaparHtml(texto: string): string {
     .replace(/'/g, '&#39;');
 }
 
+/** Nome curto soa seco no tratamento: "Ana" vira "Ana Beatriz". */
+function primeiroNome(nome: string): string {
+  const partes = nome.trim().split(/\s+/).filter(Boolean);
+
+  if (partes.length === 0) {
+    return nome;
+  }
+
+  const primeiro = partes[0] as string;
+
+  return primeiro.length <= 3 && partes[1] ? `${primeiro} ${partes[1]}` : primeiro;
+}
+
 type LancamentoParaEmail = Prisma.LancamentoGetPayload<{
   include: {
     itens: true;
@@ -62,7 +75,7 @@ export function montarVariaveis(
 
   return {
     'inquilino.nome': escaparHtml(inquilino.nome),
-    'inquilino.primeiro_nome': escaparHtml(inquilino.nome.split(' ')[0] ?? inquilino.nome),
+    'inquilino.primeiro_nome': escaparHtml(primeiroNome(inquilino.nome)),
     'imovel.apelido': escaparHtml(lancamento.imovel.apelido),
     'imovel.endereco': escaparHtml(endereco),
     'cobranca.competencia': FORMATO_MES.format(lancamento.competencia),

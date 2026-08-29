@@ -94,4 +94,5 @@ export const VARIAVEIS_MODELO_EMAIL = [
   'cobranca.itens',
   'pix.copia_e_cola',
   'pix.qrcode',
+  'pix.qrcode_url',
 ] as const;

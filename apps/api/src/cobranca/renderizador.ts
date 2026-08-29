@@ -75,6 +75,8 @@ export function montarVariaveis(
     'cobranca.dias_atraso': String(encargos.diasAtraso),
     'cobranca.itens': itens,
     'pix.copia_e_cola': escaparHtml(lancamento.pixPayload ?? ''),
+    // Endereco da imagem embutida, para usar dentro de src="".
+    'pix.qrcode_url': lancamento.pixPayload ? `cid:${CID_QRCODE}` : '',
     'pix.qrcode': lancamento.pixPayload
       ? `<img src="cid:${CID_QRCODE}" alt="QR Code Pix" width="220" height="220" />`
       : '',

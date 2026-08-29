@@ -56,6 +56,11 @@ export class EnvioNotificacoesService {
 
   /** Retorna false quando a tentativa falhou; o erro fica registrado na propria notificacao. */
   private async despachar(notificacao: NotificacaoNaFila): Promise<boolean> {
+    // So anexa o QR quando o corpo referencia o CID, senao ele viraria um anexo solto.
+    const pixPayload = notificacao.corpoRenderizado.includes(CID_QRCODE)
+      ? (notificacao.lancamento?.pixPayload ?? null)
+      : null;
+
     try {
       const resultado = await this.enviador.enviar({
         destinatario: notificacao.destinatario,
@@ -63,7 +68,7 @@ export class EnvioNotificacoesService {
         assunto: notificacao.assunto,
         corpoHtml: notificacao.corpoRenderizado,
         corpoTexto: paraTextoSimples(notificacao.corpoRenderizado),
-        anexos: await this.montarAnexos(notificacao.lancamento?.pixPayload ?? null),
+        anexos: await this.montarAnexos(pixPayload),
       });
 
       await this.prisma.notificacao.update({

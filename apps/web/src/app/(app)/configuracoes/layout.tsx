@@ -9,6 +9,7 @@ const ABAS = [
   { href: '/configuracoes/modelos', rotulo: 'Modelos de e-mail' },
   { href: '/configuracoes/regua', rotulo: 'Régua de cobrança' },
   { href: '/configuracoes/notificacoes', rotulo: 'Envios' },
+  { href: '/configuracoes/implantacao', rotulo: 'Implantação', somenteAdmin: true },
   { href: '/configuracoes/usuarios', rotulo: 'Usuários', somenteAdmin: true },
 ];
 

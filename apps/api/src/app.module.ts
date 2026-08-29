@@ -11,6 +11,7 @@ import { ContratosModule } from './contratos/contratos.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { EmailModule } from './email/email.module';
 import { ImoveisModule } from './imoveis/imoveis.module';
+import { ImplantacaoModule } from './implantacao/implantacao.module';
 import { LancamentosModule } from './lancamentos/lancamentos.module';
 import { PessoasModule } from './pessoas/pessoas.module';
 import { PixModule } from './pix/pix.module';
@@ -30,6 +31,7 @@ import { UsuariosModule } from './usuarios/usuarios.module';
     ContratosModule,
     DashboardModule,
     ImoveisModule,
+    ImplantacaoModule,
     LancamentosModule,
     PessoasModule,
     PixModule,

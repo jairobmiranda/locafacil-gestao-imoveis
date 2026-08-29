@@ -5,6 +5,7 @@ export * from './cobranca';
 export * from './comum';
 export * from './contrato';
 export * from './imovel';
+export * from './implantacao';
 export * from './lancamento';
 export * from './pessoa';
 export * from './pix';

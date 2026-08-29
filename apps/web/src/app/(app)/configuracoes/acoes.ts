@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { apiDelete, apiPatch, apiPost, ErroApi } from '@/lib/api';
+import { apiDelete, apiPatch, apiPost, apiPut, ErroApi } from '@/lib/api';
 
 export type EstadoFormulario = { erro?: string; sucesso?: string; campos?: Record<string, string> };
 
@@ -236,6 +236,30 @@ export async function processarFila(): Promise<void> {
 export async function reenviarNotificacao(id: string): Promise<void> {
   await apiPost(`/cobranca/notificacoes/${id}/reenviar`);
   revalidatePath('/configuracoes/notificacoes');
+}
+
+// ----- Implantacao -----
+
+export async function salvarWebhooks(
+  _anterior: EstadoFormulario,
+  dados: FormData,
+): Promise<EstadoFormulario> {
+  try {
+    await apiPut('/implantacao/webhooks', {
+      api: texto(dados.get('api')) ?? null,
+      web: texto(dados.get('web')) ?? null,
+    });
+  } catch (erro) {
+    return traduzir(erro);
+  }
+
+  revalidatePath('/configuracoes/implantacao');
+
+  return { sucesso: 'Webhooks salvos' };
+}
+
+export async function publicar(alvo: 'api' | 'web'): Promise<void> {
+  await apiPost(`/implantacao/publicar/${alvo}`);
 }
 
 // ----- Usuarios -----

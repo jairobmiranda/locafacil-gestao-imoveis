@@ -77,6 +77,9 @@ export const apiPost = <T>(caminho: string, corpo?: unknown) =>
 export const apiPatch = <T>(caminho: string, corpo?: unknown) =>
   api<T>(caminho, { method: 'PATCH', body: corpo ? JSON.stringify(corpo) : undefined });
 
+export const apiPut = <T>(caminho: string, corpo?: unknown) =>
+  api<T>(caminho, { method: 'PUT', body: corpo ? JSON.stringify(corpo) : undefined });
+
 export const apiDelete = <T>(caminho: string) => api<T>(caminho, { method: 'DELETE' });
 
 /** O Content-Type do multipart precisa do boundary gerado pelo fetch, entao nao pode ser fixado. */

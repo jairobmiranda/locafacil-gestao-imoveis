@@ -574,13 +574,15 @@ a {
 }
 
 .situacao-pago,
-.situacao-ativo {
+.situacao-ativo,
+.situacao-enviado {
   background: var(--positivo-suave);
   border-color: var(--positivo-borda);
   color: var(--positivo);
 }
 
-.situacao-atrasado {
+.situacao-atrasado,
+.situacao-falhou {
   background: var(--negativo-suave);
   border-color: var(--negativo-borda);
   color: var(--negativo);
@@ -593,6 +595,7 @@ a {
 }
 
 .situacao-cancelado,
+.situacao-ignorado,
 .situacao-encerrado,
 .situacao-rescindido {
   color: var(--texto-suave);

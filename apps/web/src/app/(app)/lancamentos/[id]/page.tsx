@@ -1,6 +1,12 @@
 import Link from 'next/link';
 import { apiGet } from '@/lib/api';
-import { formatarCompetencia, formatarData, formatarMoeda, rotular } from '@/lib/formato';
+import {
+  formatarCompetencia,
+  formatarData,
+  formatarDataHora,
+  formatarMoeda,
+  rotular,
+} from '@/lib/formato';
 import { AcoesLancamento } from './acoes-lancamento';
 import { CopiaECola } from './copia-e-cola';
 import { EnviarAlerta } from './enviar-alerta';
@@ -15,6 +21,17 @@ type Anexo = {
 };
 
 type ModeloEmail = { id: string; nome: string; ativo: boolean };
+
+type Notificacao = {
+  id: string;
+  destinatario: string;
+  assunto: string;
+  agendadoPara: string;
+  enviadoEm: string | null;
+  situacao: string;
+  tentativas: number;
+  mensagemErro: string | null;
+};
 
 type LancamentoDetalhe = {
   id: string;
@@ -42,10 +59,11 @@ type LancamentoDetalhe = {
 export default async function PaginaLancamento({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const [lancamento, anexos, modelos] = await Promise.all([
+  const [lancamento, anexos, modelos, notificacoes] = await Promise.all([
     apiGet<LancamentoDetalhe>(`/lancamentos/${id}`),
     apiGet<Anexo[]>('/anexos', { entidadeTipo: 'LANCAMENTO', entidadeId: id }),
     apiGet<ModeloEmail[]>('/cobranca/modelos'),
+    apiGet<{ itens: Notificacao[] }>('/cobranca/notificacoes', { lancamentoId: id, limite: 20 }),
   ]);
 
   const aberto = lancamento.situacao === 'PENDENTE' || lancamento.situacao === 'ATRASADO';
@@ -159,6 +177,55 @@ export default async function PaginaLancamento({ params }: { params: Promise<{ i
           />
         </section>
       ) : null}
+
+      <section>
+        <div className="cabecalho-secao">
+          <h2>Notificações</h2>
+        </div>
+
+        {notificacoes.itens.length === 0 ? (
+          <div className="cartao vazio">
+            <p>Nenhuma notificação para esta cobrança.</p>
+          </div>
+        ) : (
+          <div className="cartao">
+            <table className="tabela">
+              <thead>
+                <tr>
+                  <th>Agendado</th>
+                  <th>Enviado</th>
+                  <th>Destinatário</th>
+                  <th>Assunto</th>
+                  <th>Situação</th>
+                </tr>
+              </thead>
+              <tbody>
+                {notificacoes.itens.map((notificacao) => (
+                  <tr key={notificacao.id}>
+                    <td data-label="Agendado">{formatarDataHora(notificacao.agendadoPara)}</td>
+                    <td data-label="Enviado">{formatarDataHora(notificacao.enviadoEm)}</td>
+                    <td data-label="Destinatário">{notificacao.destinatario}</td>
+                    <td data-label="Assunto">
+                      {notificacao.assunto}
+                      {notificacao.mensagemErro ? (
+                        <small className="texto-suave">{notificacao.mensagemErro}</small>
+                      ) : null}
+                    </td>
+                    <td data-label="Situação">
+                      <span className={`etiqueta situacao-${notificacao.situacao.toLowerCase()}`}>
+                        {rotular(notificacao.situacao)}
+                      </span>
+                      {notificacao.tentativas > 1 ? (
+                        <small className="texto-suave">{notificacao.tentativas} tentativas</small>
+                      ) : null}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
 
       <section>
         <div className="cabecalho-secao">

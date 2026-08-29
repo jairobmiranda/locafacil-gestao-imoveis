@@ -1,6 +1,11 @@
 const MOEDA = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const DATA = new Intl.DateTimeFormat('pt-BR', { timeZone: 'UTC' });
 const MES = new Intl.DateTimeFormat('pt-BR', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+const DATA_HORA = new Intl.DateTimeFormat('pt-BR', {
+  dateStyle: 'short',
+  timeStyle: 'short',
+  timeZone: 'America/Sao_Paulo',
+});
 
 export function formatarMoeda(valor: number | null | undefined): string {
   return valor === null || valor === undefined ? '-' : MOEDA.format(valor);
@@ -8,6 +13,10 @@ export function formatarMoeda(valor: number | null | undefined): string {
 
 export function formatarData(valor: string | Date | null | undefined): string {
   return valor ? DATA.format(new Date(valor)) : '-';
+}
+
+export function formatarDataHora(valor: string | Date | null | undefined): string {
+  return valor ? DATA_HORA.format(new Date(valor)) : '-';
 }
 
 export function formatarCompetencia(valor: string | Date): string {

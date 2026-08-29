@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Cron } from '@nestjs/schedule';
+import { FUSO_HORARIO } from '../comum/ambiente';
 import { GeracaoCobrancasService } from './geracao-cobrancas.service';
 
 @Injectable()
@@ -12,7 +13,10 @@ export class ContratosScheduler {
     private readonly config: ConfigService,
   ) {}
 
-  @Cron(process.env.CRON_GERAR_COBRANCAS ?? '0 3 * * *', { name: 'gerar-cobrancas' })
+  @Cron(process.env.CRON_GERAR_COBRANCAS ?? '0 3 * * *', {
+    name: 'gerar-cobrancas',
+    timeZone: FUSO_HORARIO,
+  })
   async gerarCobrancas(): Promise<void> {
     if (!this.habilitado()) {
       return;
@@ -25,7 +29,10 @@ export class ContratosScheduler {
     }
   }
 
-  @Cron(process.env.CRON_MARCAR_ATRASO ?? '0 4 * * *', { name: 'marcar-atrasos' })
+  @Cron(process.env.CRON_MARCAR_ATRASO ?? '0 4 * * *', {
+    name: 'marcar-atrasos',
+    timeZone: FUSO_HORARIO,
+  })
   async marcarAtrasos(): Promise<void> {
     if (!this.habilitado()) {
       return;

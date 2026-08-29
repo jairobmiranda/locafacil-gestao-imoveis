@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Cron } from '@nestjs/schedule';
+import { FUSO_HORARIO } from '../comum/ambiente';
 import { EnvioNotificacoesService } from './envio-notificacoes.service';
 import { ReguaCobrancaService } from './regua-cobranca.service';
 
@@ -14,7 +15,10 @@ export class CobrancaScheduler {
     private readonly config: ConfigService,
   ) {}
 
-  @Cron(process.env.CRON_REGUA_COBRANCA ?? '0 5 * * *', { name: 'regua-cobranca' })
+  @Cron(process.env.CRON_REGUA_COBRANCA ?? '0 5 * * *', {
+    name: 'regua-cobranca',
+    timeZone: FUSO_HORARIO,
+  })
   async agendar(): Promise<void> {
     if (!this.habilitado()) {
       return;
@@ -27,7 +31,10 @@ export class CobrancaScheduler {
     }
   }
 
-  @Cron(process.env.CRON_ENVIO_EMAIL ?? '*/10 * * * *', { name: 'envio-email' })
+  @Cron(process.env.CRON_ENVIO_EMAIL ?? '*/10 * * * *', {
+    name: 'envio-email',
+    timeZone: FUSO_HORARIO,
+  })
   async enviar(): Promise<void> {
     if (!this.habilitado()) {
       return;

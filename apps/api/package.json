@@ -21,6 +21,7 @@
     "@nestjs/swagger": "^11.0.3",
     "@prisma/client": "^6.2.1",
     "bcryptjs": "^2.4.3",
+    "dotenv": "^17.4.2",
     "minio": "^8.0.4",
     "nodemailer": "^9.0.5",
     "passport": "^0.7.0",

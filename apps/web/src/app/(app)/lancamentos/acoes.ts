@@ -123,3 +123,26 @@ export async function gerarPix(id: string): Promise<void> {
   await apiPost(`/pix/cobrancas/${id}`, {});
   revalidatePath(`/lancamentos/${id}`);
 }
+
+export async function enviarAlertaCobranca(
+  id: string,
+  modeloEmailId: string,
+): Promise<{ sucesso?: string; erro?: string }> {
+  let resultado: { destinatario: string; enviado: boolean; mensagemErro: string | null };
+
+  try {
+    resultado = await apiPost(`/cobranca/lancamentos/${id}/notificar`, { modeloEmailId });
+  } catch (erro) {
+    if (erro instanceof ErroApi) {
+      return { erro: erro.message };
+    }
+
+    throw erro;
+  }
+
+  revalidatePath(`/lancamentos/${id}`);
+
+  return resultado.enviado
+    ? { sucesso: `Alerta enviado para ${resultado.destinatario}` }
+    : { erro: resultado.mensagemErro ?? 'Falha ao enviar o alerta' };
+}

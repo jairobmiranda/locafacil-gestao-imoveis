@@ -60,6 +60,12 @@ export const testarEmailSchema = z.object({
   destinatario: z.string().email(),
 });
 
+export const enviarCobrancaManualSchema = z.object({
+  modeloEmailId: z.string().uuid(),
+  /** Sobrescreve o contato principal do contrato. */
+  destinatario: z.string().email().optional(),
+});
+
 export type SituacaoNotificacao = z.infer<typeof situacaoNotificacaoSchema>;
 export type CriarModeloEmailDto = z.infer<typeof criarModeloEmailSchema>;
 export type AtualizarModeloEmailDto = z.infer<typeof atualizarModeloEmailSchema>;
@@ -69,6 +75,7 @@ export type CriarRegraCobrancaDto = z.infer<typeof criarRegraCobrancaSchema>;
 export type AtualizarRegraCobrancaDto = z.infer<typeof atualizarRegraCobrancaSchema>;
 export type ListarNotificacoesDto = z.infer<typeof listarNotificacoesSchema>;
 export type TestarEmailDto = z.infer<typeof testarEmailSchema>;
+export type EnviarCobrancaManualDto = z.infer<typeof enviarCobrancaManualSchema>;
 
 /** Variaveis aceitas no assunto e no corpo dos modelos. */
 export const VARIAVEIS_MODELO_EMAIL = [

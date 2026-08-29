@@ -3,6 +3,7 @@ import { apiGet } from '@/lib/api';
 import { formatarCompetencia, formatarData, formatarMoeda, rotular } from '@/lib/formato';
 import { AcoesLancamento } from './acoes-lancamento';
 import { CopiaECola } from './copia-e-cola';
+import { EnviarAlerta } from './enviar-alerta';
 import { FormularioBaixa } from './formulario-baixa';
 
 type Anexo = {
@@ -12,6 +13,8 @@ type Anexo = {
   tamanhoBytes: number;
   criadoEm: string;
 };
+
+type ModeloEmail = { id: string; nome: string; ativo: boolean };
 
 type LancamentoDetalhe = {
   id: string;
@@ -39,9 +42,10 @@ type LancamentoDetalhe = {
 export default async function PaginaLancamento({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const [lancamento, anexos] = await Promise.all([
+  const [lancamento, anexos, modelos] = await Promise.all([
     apiGet<LancamentoDetalhe>(`/lancamentos/${id}`),
     apiGet<Anexo[]>('/anexos', { entidadeTipo: 'LANCAMENTO', entidadeId: id }),
+    apiGet<ModeloEmail[]>('/cobranca/modelos'),
   ]);
 
   const aberto = lancamento.situacao === 'PENDENTE' || lancamento.situacao === 'ATRASADO';
@@ -131,6 +135,15 @@ export default async function PaginaLancamento({ params }: { params: Promise<{ i
             <h2>Pix</h2>
           </div>
           <CopiaECola payload={lancamento.pixPayload} lancamentoId={lancamento.id} />
+        </section>
+      ) : null}
+
+      {aberto && lancamento.natureza === 'ENTRADA' ? (
+        <section>
+          <div className="cabecalho-secao">
+            <h2>Enviar alerta de cobrança</h2>
+          </div>
+          <EnviarAlerta id={lancamento.id} modelos={modelos.filter((modelo) => modelo.ativo)} />
         </section>
       ) : null}
 

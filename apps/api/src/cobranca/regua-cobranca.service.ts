@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import type { EnviarCobrancaManualDto } from '@locafacil/contracts';
 import { apenasData, diferencaEmDias, somarDias } from '../comum/datas';
 import { PrismaService } from '../prisma/prisma.service';
 import { montarVariaveis, paraTextoSimples, renderizar } from './renderizador';
@@ -173,5 +174,65 @@ export class ReguaCobrancaService {
   /** Mantido junto do renderizador para o preview na tela de modelos. */
   previewTexto(html: string): string {
     return paraTextoSimples(html);
+  }
+
+  /**
+   * Envio avulso de uma cobranca, fora da regua. Fica sem `regraCobrancaId`,
+   * o que tambem libera o indice de idempotencia para repetir o disparo.
+   */
+  async criarNotificacaoManual(
+    lancamentoId: string,
+    dados: EnviarCobrancaManualDto,
+  ): Promise<{ id: string; destinatario: string }> {
+    const cobranca = await this.prisma.lancamento.findUnique({
+      where: { id: lancamentoId },
+      include: INCLUI_COBRANCA,
+    });
+
+    if (!cobranca) {
+      throw new NotFoundException('Lançamento não encontrado');
+    }
+
+    const contato = cobranca.contrato?.partes[0]?.pessoa;
+    const destinatario = dados.destinatario ?? contato?.email;
+
+    if (!destinatario) {
+      throw new BadRequestException(
+        'Sem destinatário: o contrato não tem contato principal com e-mail',
+      );
+    }
+
+    const modelo = await this.prisma.modeloEmail.findUnique({
+      where: { id: dados.modeloEmailId },
+    });
+
+    if (!modelo) {
+      throw new NotFoundException('Modelo de e-mail não encontrado');
+    }
+
+    const agora = new Date();
+    const variaveis = montarVariaveis(cobranca, { nome: contato?.nome ?? destinatario }, agora);
+    const anteriores = await this.prisma.notificacao.count({
+      where: { lancamentoId, regraCobrancaId: null },
+    });
+
+    const notificacao = await this.prisma.notificacao.create({
+      data: {
+        lancamentoId: cobranca.id,
+        contratoId: cobranca.contratoId,
+        modeloEmailId: modelo.id,
+        ocorrencia: anteriores + 1,
+        destinatario,
+        assunto: renderizar(modelo.assunto, variaveis).slice(0, 200),
+        corpoRenderizado: renderizar(modelo.corpoHtml, variaveis),
+        agendadoPara: agora,
+        situacao: 'PENDENTE',
+      },
+      select: { id: true, destinatario: true },
+    });
+
+    this.logger.log(`Notificação manual ${notificacao.id} criada para ${destinatario}`);
+
+    return notificacao;
   }
 }

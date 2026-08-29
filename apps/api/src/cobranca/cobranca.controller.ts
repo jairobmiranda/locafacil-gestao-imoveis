@@ -21,6 +21,7 @@ import {
   criarModeloEmailSchema,
   criarRegraCobrancaSchema,
   criarReguaCobrancaSchema,
+  enviarCobrancaManualSchema,
   listarNotificacoesSchema,
   testarEmailSchema,
   VARIAVEIS_MODELO_EMAIL,
@@ -30,6 +31,7 @@ import {
   type CriarModeloEmailDto,
   type CriarRegraCobrancaDto,
   type CriarReguaCobrancaDto,
+  type EnviarCobrancaManualDto,
   type ListarNotificacoesDto,
   type TestarEmailDto,
 } from '@locafacil/contracts';
@@ -163,6 +165,19 @@ export class CobrancaController {
   @ApiOperation({ summary: 'Executa a régua manualmente e agenda os disparos do dia' })
   agendar() {
     return this.regua.agendar();
+  }
+
+  @Post('lancamentos/:id/notificar')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Envia um alerta avulso de uma cobrança, fora da régua' })
+  async notificarLancamento(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(new ZodValidationPipe(enviarCobrancaManualSchema)) dados: EnviarCobrancaManualDto,
+  ) {
+    const notificacao = await this.regua.criarNotificacaoManual(id, dados);
+    const resultado = await this.envio.enviarAgora(notificacao.id);
+
+    return { ...notificacao, ...resultado };
   }
 
   @Post('processar-fila')

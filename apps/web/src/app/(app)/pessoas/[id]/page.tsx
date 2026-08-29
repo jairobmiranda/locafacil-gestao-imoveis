@@ -52,7 +52,7 @@ export default async function PaginaPessoa({ params }: { params: Promise<{ id: s
               </thead>
               <tbody>
                 {pessoa.partesContrato.map((vinculo) => (
-                  <tr key={vinculo.contrato.id}>
+                  <tr key={`${vinculo.contrato.id}-${vinculo.papel}`}>
                     <td>
                       <Link href={`/imoveis/${vinculo.contrato.imovel.id}`} className="link">
                         {vinculo.contrato.imovel.apelido}

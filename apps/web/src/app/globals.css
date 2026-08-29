@@ -1213,16 +1213,16 @@ textarea[name='corpoHtml'] {
     gap: var(--e4);
   }
 
-  /* Menu vira só ícones, exceto o item ativo. */
+  /* Menu vira só ícones, exceto o item ativo. As abas de configurações mantêm o rótulo. */
   .item-menu {
     padding: 7px 10px;
   }
 
-  .item-menu span {
+  .menu .item-menu span {
     display: none;
   }
 
-  .item-menu.ativo span {
+  .menu .item-menu.ativo span {
     display: inline;
   }
 }

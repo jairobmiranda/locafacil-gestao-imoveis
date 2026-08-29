@@ -2,7 +2,13 @@
 
 import { useActionState, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
-import { alternarRegraAtiva, criarRegra, removerRegra, type EstadoFormulario } from '../acoes';
+import {
+  alternarRegraAtiva,
+  criarRegra,
+  criarRegua,
+  removerRegra,
+  type EstadoFormulario,
+} from '../acoes';
 
 type Regra = {
   id: string;
@@ -51,6 +57,66 @@ function Botao() {
   );
 }
 
+function BotaoRegua() {
+  const { pending } = useFormStatus();
+
+  return (
+    <button type="submit" className="botao botao-primario" disabled={pending}>
+      {pending ? 'Criando...' : 'Criar régua'}
+    </button>
+  );
+}
+
+function FormularioRegua({
+  estado,
+  acao,
+  primeira,
+  aoCancelar,
+}: {
+  estado: EstadoFormulario;
+  acao: (dados: FormData) => void;
+  primeira: boolean;
+  aoCancelar?: () => void;
+}) {
+  return (
+    <section>
+      <div className="cabecalho-secao">
+        <h2>Nova régua</h2>
+      </div>
+
+      <form action={acao} className="cartao formulario">
+        {primeira ? (
+          <p className="texto-suave">
+            Nenhuma régua cadastrada. Crie uma para depois configurar as etapas de cobrança.
+          </p>
+        ) : null}
+
+        <label className={estado.campos?.nome ? 'campo com-erro' : 'campo'}>
+          Nome
+          <input name="nome" required maxLength={100} placeholder="Régua padrão" />
+        </label>
+
+        <label className="campo-inline">
+          <input type="checkbox" name="padrao" defaultChecked={primeira} />
+          <span>Usar como padrão nos contratos sem régua própria</span>
+        </label>
+
+        {estado.erro ? <p className="alerta-erro">{estado.erro}</p> : null}
+        {estado.sucesso ? <p className="alerta-sucesso">{estado.sucesso}</p> : null}
+
+        <div className="acoes-formulario">
+          {aoCancelar ? (
+            <button type="button" className="botao" onClick={aoCancelar}>
+              Fechar
+            </button>
+          ) : null}
+          <BotaoRegua />
+        </div>
+      </form>
+    </section>
+  );
+}
+
 export function EditorRegua({
   reguas,
   modelos,
@@ -59,10 +125,16 @@ export function EditorRegua({
   modelos: { id: string; nome: string }[];
 }) {
   const [estado, acao] = useActionState<EstadoFormulario, FormData>(criarRegra, {});
+  const [estadoRegua, acaoRegua] = useActionState<EstadoFormulario, FormData>(criarRegua, {});
   const [pendente, iniciar] = useTransition();
   const [erro, setErro] = useState<string>();
+  const [selecionada, setSelecionada] = useState<string>();
+  const [criandoRegua, setCriandoRegua] = useState(false);
 
-  const regua = reguas.find((item) => item.padrao) ?? reguas[0];
+  const regua =
+    reguas.find((item) => item.id === selecionada) ??
+    reguas.find((item) => item.padrao) ??
+    reguas[0];
 
   function executar(operacao: () => Promise<void>, confirmacao?: string) {
     if (confirmacao && !confirm(confirmacao)) {
@@ -80,17 +152,39 @@ export function EditorRegua({
   }
 
   if (!regua) {
-    return (
-      <p className="aviso">
-        Nenhuma régua cadastrada. Rode o seed do banco para criar a régua padrão.
-      </p>
-    );
+    return <FormularioRegua estado={estadoRegua} acao={acaoRegua} primeira />;
   }
 
   const proximaSequencia = Math.max(0, ...regua.regras.map((regra) => regra.sequencia)) + 1;
 
   return (
     <>
+      <div className="cabecalho-pagina">
+        <label className="campo">
+          Régua
+          <select value={regua.id} onChange={(evento) => setSelecionada(evento.target.value)}>
+            {reguas.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.nome}
+                {item.padrao ? ' (padrão)' : ''}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button type="button" className="botao" onClick={() => setCriandoRegua((atual) => !atual)}>
+          {criandoRegua ? 'Cancelar' : 'Nova régua'}
+        </button>
+      </div>
+
+      {criandoRegua ? (
+        <FormularioRegua
+          estado={estadoRegua}
+          acao={acaoRegua}
+          primeira={false}
+          aoCancelar={() => setCriandoRegua(false)}
+        />
+      ) : null}
+
       <div className="cartao">
         <div className="cabecalho-secao">
           <h2>{regua.nome}</h2>

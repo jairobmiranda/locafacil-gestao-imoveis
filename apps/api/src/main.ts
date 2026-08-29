@@ -4,6 +4,7 @@ import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { VERSAO_API } from './comum/versao';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
@@ -18,7 +19,7 @@ async function bootstrap() {
     const doc = new DocumentBuilder()
       .setTitle('LocaFácil API')
       .setDescription('Gestão imobiliária: imóveis, lançamentos, contratos e cobrança')
-      .setVersion('0.1.0')
+      .setVersion(VERSAO_API)
       .addBearerAuth()
       .build();
     SwaggerModule.setup(`${prefixo}/docs`, app, SwaggerModule.createDocument(app, doc));

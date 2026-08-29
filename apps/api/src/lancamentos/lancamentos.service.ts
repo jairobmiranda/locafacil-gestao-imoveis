@@ -138,7 +138,9 @@ export class LancamentosService {
       throw new ConflictException(`Lançamento já está ${lancamento.situacao.toLowerCase()}`);
     }
 
-    await this.garantirComprovante(id, dados.anexoComprovanteId);
+    if (dados.anexoComprovanteId) {
+      await this.garantirComprovante(id, dados.anexoComprovanteId);
+    }
 
     const encargos = calcularEncargos(
       lancamento.valor,
@@ -228,9 +230,7 @@ export class LancamentosService {
     });
 
     if (!comprovante) {
-      throw new BadRequestException(
-        'Envie o comprovante como anexo deste lançamento antes de dar baixa',
-      );
+      throw new BadRequestException('O comprovante informado não é um anexo deste lançamento');
     }
   }
 

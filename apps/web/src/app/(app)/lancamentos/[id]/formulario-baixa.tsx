@@ -80,12 +80,11 @@ export function FormularioBaixa({
       </div>
 
       <label className={erros.comprovante ? 'campo com-erro' : 'campo'}>
-        Comprovante (obrigatório)
+        Comprovante (opcional)
         <input
           name="comprovante"
           type="file"
           accept="application/pdf,image/jpeg,image/png,image/webp,image/heic"
-          required
         />
         {erros.comprovante ? <span className="mensagem-campo">{erros.comprovante}</span> : null}
         <small className="texto-suave">PDF ou imagem, até 15 MB</small>

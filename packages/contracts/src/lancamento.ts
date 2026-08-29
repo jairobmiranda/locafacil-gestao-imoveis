@@ -76,7 +76,7 @@ export const baixarLancamentoSchema = z.object({
   pagoEm: z.coerce.date(),
   valorPago: z.number().positive(),
   formaPagamento: formaPagamentoSchema,
-  anexoComprovanteId: z.string().uuid(),
+  anexoComprovanteId: z.string().uuid().optional(),
   observacoes: z.string().optional(),
 });
 

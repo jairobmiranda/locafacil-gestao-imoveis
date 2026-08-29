@@ -63,38 +63,40 @@ export async function baixarLancamento(
   dados: FormData,
 ): Promise<EstadoFormulario> {
   const id = String(dados.get('id') ?? '');
-  const comprovante = dados.get('comprovante');
+  const arquivo = dados.get('comprovante');
+  const comprovante = arquivo instanceof File && arquivo.size > 0 ? arquivo : null;
 
-  if (!(comprovante instanceof File) || comprovante.size === 0) {
-    return { erro: 'Anexe o comprovante do pagamento', campos: { comprovante: 'Obrigatório' } };
-  }
-
-  if (!TIPOS_ACEITOS.includes(comprovante.type)) {
+  if (comprovante && !TIPOS_ACEITOS.includes(comprovante.type)) {
     return {
       erro: 'Formato não aceito',
       campos: { comprovante: 'Use PDF, JPEG, PNG, WebP ou HEIC' },
     };
   }
 
-  if (comprovante.size > TAMANHO_MAXIMO) {
+  if (comprovante && comprovante.size > TAMANHO_MAXIMO) {
     return { erro: 'Arquivo muito grande', campos: { comprovante: 'Limite de 15 MB' } };
   }
 
   try {
-    // O comprovante precisa existir antes da baixa: a API recusa a baixa sem ele.
-    const envio = new FormData();
-    envio.set('arquivo', comprovante);
-    envio.set('entidadeTipo', 'LANCAMENTO');
-    envio.set('entidadeId', id);
-    envio.set('especie', 'COMPROVANTE');
+    let anexoComprovanteId: string | undefined;
 
-    const anexo = await apiUpload<{ id: string }>('/anexos', envio);
+    // O anexo precisa existir antes da baixa: a API valida o vinculo com o lancamento.
+    if (comprovante) {
+      const envio = new FormData();
+      envio.set('arquivo', comprovante);
+      envio.set('entidadeTipo', 'LANCAMENTO');
+      envio.set('entidadeId', id);
+      envio.set('especie', 'COMPROVANTE');
+
+      const anexo = await apiUpload<{ id: string }>('/anexos', envio);
+      anexoComprovanteId = anexo.id;
+    }
 
     await apiPatch(`/lancamentos/${id}/baixar`, {
       pagoEm: String(dados.get('pagoEm') ?? ''),
       valorPago: numero(dados.get('valorPago')),
       formaPagamento: String(dados.get('formaPagamento') ?? 'PIX'),
-      anexoComprovanteId: anexo.id,
+      anexoComprovanteId,
       observacoes: texto(dados.get('observacoes')),
     });
   } catch (erro) {

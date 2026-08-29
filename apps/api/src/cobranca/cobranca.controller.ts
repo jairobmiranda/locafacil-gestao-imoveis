@@ -12,6 +12,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   atualizarModeloEmailSchema,
@@ -47,7 +48,14 @@ export class CobrancaController {
     private readonly regua: ReguaCobrancaService,
     private readonly envio: EnvioNotificacoesService,
     @Inject(ENVIADOR_EMAIL) private readonly enviador: EnviadorEmail,
+    private readonly config: ConfigService,
   ) {}
+
+  @Get('configuracao')
+  @ApiOperation({ summary: 'Estado do envio de e-mails' })
+  configuracao() {
+    return { envioAtivo: this.config.get<string>('EMAIL_ENVIO_ATIVO') === 'true' };
+  }
 
   @Get('variaveis')
   @ApiOperation({ summary: 'Variáveis aceitas nos modelos de e-mail' })

@@ -170,30 +170,35 @@ export async function criarRegua(
   return { sucesso: 'Régua criada' };
 }
 
-export async function criarRegra(
+export async function salvarRegra(
   _anterior: EstadoFormulario,
   dados: FormData,
 ): Promise<EstadoFormulario> {
+  const id = texto(dados.get('id'));
   const reguaId = String(dados.get('reguaId') ?? '');
 
+  const corpo = {
+    diasOffset: Number(dados.get('diasOffset') ?? 0),
+    intervaloRepeticaoDias: numeroOuNulo(dados.get('intervaloRepeticaoDias')),
+    maximoRepeticoes: numeroOuNulo(dados.get('maximoRepeticoes')),
+    modeloEmailId: String(dados.get('modeloEmailId') ?? ''),
+    horaEnvio: String(dados.get('horaEnvio') ?? '09:00'),
+    apenasSeSituacao: texto(dados.get('apenasSeSituacao')) ?? null,
+  };
+
   try {
-    await apiPost(`/cobranca/reguas/${reguaId}/regras`, {
-      sequencia: Number(dados.get('sequencia') ?? 1),
-      diasOffset: Number(dados.get('diasOffset') ?? 0),
-      intervaloRepeticaoDias: numeroOuNulo(dados.get('intervaloRepeticaoDias')),
-      maximoRepeticoes: numeroOuNulo(dados.get('maximoRepeticoes')),
-      modeloEmailId: String(dados.get('modeloEmailId') ?? ''),
-      horaEnvio: String(dados.get('horaEnvio') ?? '09:00'),
-      apenasSeSituacao: texto(dados.get('apenasSeSituacao')) ?? null,
-      ativa: true,
-    });
+    if (id) {
+      await apiPatch(`/cobranca/regras/${id}`, corpo);
+    } else {
+      await apiPost(`/cobranca/reguas/${reguaId}/regras`, { ...corpo, ativa: true });
+    }
   } catch (erro) {
     return traduzir(erro);
   }
 
   revalidatePath('/configuracoes/regua');
 
-  return { sucesso: 'Etapa adicionada' };
+  return { sucesso: id ? 'Etapa atualizada' : 'Etapa adicionada' };
 }
 
 export async function removerRegra(id: string): Promise<void> {

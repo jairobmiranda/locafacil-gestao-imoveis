@@ -78,7 +78,14 @@ export class CobrancaService {
   async criarRegra(reguaId: string, dados: CriarRegraCobrancaDto) {
     await this.garantirRegua(reguaId);
 
-    return this.prisma.regraCobranca.create({ data: { ...dados, reguaId } });
+    // Sequencia provisoria fora da faixa usada; a ordem real vem do renumerar.
+    const criada = await this.prisma.regraCobranca.create({
+      data: { ...dados, reguaId, sequencia: -1 },
+    });
+
+    await this.renumerar(reguaId);
+
+    return this.prisma.regraCobranca.findUniqueOrThrow({ where: { id: criada.id } });
   }
 
   async atualizarRegra(id: string, dados: AtualizarRegraCobrancaDto) {
@@ -88,7 +95,10 @@ export class CobrancaService {
       throw new NotFoundException('Regra não encontrada');
     }
 
-    return this.prisma.regraCobranca.update({ where: { id }, data: dados });
+    await this.prisma.regraCobranca.update({ where: { id }, data: dados });
+    await this.renumerar(regra.reguaId);
+
+    return this.prisma.regraCobranca.findUniqueOrThrow({ where: { id } });
   }
 
   async removerRegra(id: string): Promise<void> {
@@ -99,6 +109,33 @@ export class CobrancaService {
     }
 
     await this.prisma.regraCobranca.delete({ where: { id } });
+    await this.renumerar(regra.reguaId);
+  }
+
+  /** A ordem das etapas e cronologica: quem dispara antes vem antes. */
+  private async renumerar(reguaId: string): Promise<void> {
+    const regras = await this.prisma.regraCobranca.findMany({
+      where: { reguaId },
+      select: { id: true },
+      orderBy: [{ diasOffset: 'asc' }, { horaEnvio: 'asc' }],
+    });
+
+    await this.prisma.$transaction(async (tx) => {
+      // O indice [reguaId, sequencia] e unico, entao a ordem passa por valores livres antes.
+      for (const [indice, regra] of regras.entries()) {
+        await tx.regraCobranca.update({
+          where: { id: regra.id },
+          data: { sequencia: -(indice + 1) },
+        });
+      }
+
+      for (const [indice, regra] of regras.entries()) {
+        await tx.regraCobranca.update({
+          where: { id: regra.id },
+          data: { sequencia: indice + 1 },
+        });
+      }
+    });
   }
 
   // ----- Notificacoes -----

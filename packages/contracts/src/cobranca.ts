@@ -35,7 +35,6 @@ export const criarReguaCobrancaSchema = z.object({
 export const atualizarReguaCobrancaSchema = criarReguaCobrancaSchema.partial();
 
 export const criarRegraCobrancaSchema = z.object({
-  sequencia: z.number().int().min(1),
   diasOffset: z.number().int().min(-90).max(365),
   intervaloRepeticaoDias: z.number().int().min(1).max(90).nullish(),
   maximoRepeticoes: z.number().int().min(1).max(50).nullish(),

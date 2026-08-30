@@ -4,9 +4,9 @@ import { useActionState, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import {
   alternarRegraAtiva,
-  criarRegra,
   criarRegua,
   removerRegra,
+  salvarRegra,
   type EstadoFormulario,
 } from '../acoes';
 
@@ -47,12 +47,12 @@ function descreverMomento(regra: Regra): string {
   return `${base}, repetindo a cada ${regra.intervaloRepeticaoDias} dia(s)${teto}`;
 }
 
-function Botao() {
+function Botao({ edicao }: { edicao: boolean }) {
   const { pending } = useFormStatus();
 
   return (
     <button type="submit" className="botao botao-primario" disabled={pending}>
-      {pending ? 'Adicionando...' : 'Adicionar etapa'}
+      {pending ? 'Salvando...' : edicao ? 'Salvar etapa' : 'Adicionar etapa'}
     </button>
   );
 }
@@ -124,12 +124,13 @@ export function EditorRegua({
   reguas: Regua[];
   modelos: { id: string; nome: string }[];
 }) {
-  const [estado, acao] = useActionState<EstadoFormulario, FormData>(criarRegra, {});
+  const [estado, acao] = useActionState<EstadoFormulario, FormData>(salvarRegra, {});
   const [estadoRegua, acaoRegua] = useActionState<EstadoFormulario, FormData>(criarRegua, {});
   const [pendente, iniciar] = useTransition();
   const [erro, setErro] = useState<string>();
   const [selecionada, setSelecionada] = useState<string>();
   const [criandoRegua, setCriandoRegua] = useState(false);
+  const [edicaoId, setEdicaoId] = useState<string>();
 
   const regua =
     reguas.find((item) => item.id === selecionada) ??
@@ -155,7 +156,8 @@ export function EditorRegua({
     return <FormularioRegua estado={estadoRegua} acao={acaoRegua} primeira />;
   }
 
-  const proximaSequencia = Math.max(0, ...regua.regras.map((regra) => regra.sequencia)) + 1;
+  const { id: reguaId, regras } = regua;
+  const emEdicao = regras.find((regra) => regra.id === edicaoId);
 
   return (
     <>
@@ -218,6 +220,14 @@ export function EditorRegua({
                       type="button"
                       className="botao botao-texto"
                       disabled={pendente}
+                      onClick={() => setEdicaoId(regra.id)}
+                    >
+                      Editar
+                    </button>
+                    <button
+                      type="button"
+                      className="botao botao-texto"
+                      disabled={pendente}
                       onClick={() => executar(() => alternarRegraAtiva(regra.id, !regra.ativa))}
                     >
                       {regra.ativa ? 'Desativar' : 'Ativar'}
@@ -244,27 +254,34 @@ export function EditorRegua({
 
       <section>
         <div className="cabecalho-secao">
-          <h2>Nova etapa</h2>
+          <h2>{emEdicao ? `Etapa ${emEdicao.sequencia}` : 'Nova etapa'}</h2>
         </div>
 
-        <form action={acao} className="cartao formulario">
+        <form action={acao} className="cartao formulario" key={emEdicao?.id ?? 'nova'}>
           <input type="hidden" name="reguaId" value={regua.id} />
+          {emEdicao ? <input type="hidden" name="id" value={emEdicao.id} /> : null}
 
           <div className="grade">
-            <label className="campo">
-              Sequência
-              <input name="sequencia" type="number" min={1} defaultValue={proximaSequencia} />
-            </label>
-
             <label className={estado.campos?.diasOffset ? 'campo com-erro' : 'campo'}>
               Dias em relação ao vencimento
-              <input name="diasOffset" type="number" defaultValue={0} required />
-              <small className="texto-suave">Negativo antes, 0 no dia, positivo em atraso</small>
+              <input
+                name="diasOffset"
+                type="number"
+                defaultValue={emEdicao?.diasOffset ?? 0}
+                required
+              />
+              <small className="texto-suave">
+                Negativo antes, 0 no dia, positivo em atraso. A ordem das etapas segue esse valor.
+              </small>
             </label>
 
             <label className="campo">
               Modelo de e-mail
-              <select name="modeloEmailId" required defaultValue="">
+              <select
+                name="modeloEmailId"
+                required
+                defaultValue={emEdicao?.modeloEmail.id ?? ''}
+              >
                 <option value="" disabled>
                   Selecione
                 </option>
@@ -278,22 +295,34 @@ export function EditorRegua({
 
             <label className="campo">
               Hora do envio
-              <input name="horaEnvio" type="time" defaultValue="09:00" />
+              <input name="horaEnvio" type="time" defaultValue={emEdicao?.horaEnvio ?? '09:00'} />
             </label>
 
             <label className="campo">
               Repetir a cada (dias)
-              <input name="intervaloRepeticaoDias" type="number" min={1} placeholder="não repete" />
+              <input
+                name="intervaloRepeticaoDias"
+                type="number"
+                min={1}
+                placeholder="não repete"
+                defaultValue={emEdicao?.intervaloRepeticaoDias ?? ''}
+              />
             </label>
 
             <label className="campo">
               Máximo de repetições
-              <input name="maximoRepeticoes" type="number" min={1} placeholder="sem limite" />
+              <input
+                name="maximoRepeticoes"
+                type="number"
+                min={1}
+                placeholder="sem limite"
+                defaultValue={emEdicao?.maximoRepeticoes ?? ''}
+              />
             </label>
 
             <label className="campo">
               Só se a situação for
-              <select name="apenasSeSituacao" defaultValue="">
+              <select name="apenasSeSituacao" defaultValue={emEdicao?.apenasSeSituacao ?? ''}>
                 <option value="">Qualquer</option>
                 <option value="PENDENTE">Pendente</option>
                 <option value="ATRASADO">Atrasado</option>
@@ -305,7 +334,12 @@ export function EditorRegua({
           {estado.sucesso ? <p className="alerta-sucesso">{estado.sucesso}</p> : null}
 
           <div className="acoes-formulario">
-            <Botao />
+            {emEdicao ? (
+              <button type="button" className="botao" onClick={() => setEdicaoId(undefined)}>
+                Cancelar
+              </button>
+            ) : null}
+            <Botao edicao={Boolean(emEdicao)} />
           </div>
         </form>
       </section>

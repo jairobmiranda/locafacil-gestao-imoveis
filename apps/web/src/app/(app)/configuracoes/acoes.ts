@@ -228,6 +228,23 @@ export async function testarEmail(
   return { sucesso: 'E-mail de teste enviado. Confira a caixa de entrada e o spam.' };
 }
 
+export async function salvarEmailsGestor(
+  _anterior: EstadoFormulario,
+  dados: FormData,
+): Promise<EstadoFormulario> {
+  try {
+    await apiPut('/cobranca/configuracao/emails-gestor', {
+      emailsGestor: String(dados.get('emailsGestor') ?? ''),
+    });
+  } catch (erro) {
+    return traduzir(erro);
+  }
+
+  revalidatePath('/configuracoes/notificacoes');
+
+  return { sucesso: 'Destinatários salvos' };
+}
+
 export async function agendarRegua(): Promise<void> {
   await apiPost('/cobranca/agendar');
   revalidatePath('/configuracoes/notificacoes');

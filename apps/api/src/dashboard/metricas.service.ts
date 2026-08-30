@@ -237,7 +237,7 @@ export class MetricasService {
   async alertas() {
     const hoje = apenasData(new Date());
 
-    const [contratos, cobrancas] = await Promise.all([
+    const [contratos, cobrancas, pagamentosInformados] = await Promise.all([
       this.prisma.contrato.findMany({
         where: {
           situacao: 'ATIVO',
@@ -268,8 +268,27 @@ export class MetricasService {
         orderBy: { vencimento: 'asc' },
         take: 20,
       }),
+      this.prisma.avisoPagamento.findMany({
+        where: { situacao: 'PENDENTE' },
+        select: {
+          id: true,
+          valor: true,
+          pagoEm: true,
+          criadoEm: true,
+          anexoId: true,
+          lancamento: {
+            select: {
+              id: true,
+              descricao: true,
+              imovel: { select: { id: true, apelido: true } },
+            },
+          },
+        },
+        orderBy: { criadoEm: 'desc' },
+        take: 20,
+      }),
     ]);
 
-    return { contratos, cobrancas };
+    return { contratos, cobrancas, pagamentosInformados };
   }
 }

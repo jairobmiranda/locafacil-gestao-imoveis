@@ -59,6 +59,19 @@ export const testarEmailSchema = z.object({
   destinatario: z.string().email(),
 });
 
+/** Aceita varios enderecos separados por ponto e virgula ou virgula. */
+export const salvarEmailsGestorSchema = z.object({
+  emailsGestor: z
+    .string()
+    .transform((valor) =>
+      valor
+        .split(/[;,]/)
+        .map((item) => item.trim())
+        .filter(Boolean),
+    )
+    .pipe(z.array(z.string().email('Endereço inválido')).max(10)),
+});
+
 export const enviarCobrancaManualSchema = z.object({
   modeloEmailId: z.string().uuid(),
   /** Sobrescreve o contato principal do contrato. */
@@ -74,6 +87,7 @@ export type CriarRegraCobrancaDto = z.infer<typeof criarRegraCobrancaSchema>;
 export type AtualizarRegraCobrancaDto = z.infer<typeof atualizarRegraCobrancaSchema>;
 export type ListarNotificacoesDto = z.infer<typeof listarNotificacoesSchema>;
 export type TestarEmailDto = z.infer<typeof testarEmailSchema>;
+export type SalvarEmailsGestorDto = z.infer<typeof salvarEmailsGestorSchema>;
 export type EnviarCobrancaManualDto = z.infer<typeof enviarCobrancaManualSchema>;
 
 /** Variaveis aceitas no assunto e no corpo dos modelos. */
@@ -94,4 +108,5 @@ export const VARIAVEIS_MODELO_EMAIL = [
   'pix.copia_e_cola',
   'pix.qrcode',
   'pix.qrcode_url',
+  'link_pagamento',
 ] as const;

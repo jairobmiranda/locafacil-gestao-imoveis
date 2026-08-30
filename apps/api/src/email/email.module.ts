@@ -1,5 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { DestinatariosInternosService } from './destinatarios-internos.service';
 import { ENVIADOR_EMAIL } from './enviador-email';
 import { LogEnviador } from './log.enviador';
 import { SmtpEnviador } from './smtp.enviador';
@@ -7,6 +8,7 @@ import { SmtpEnviador } from './smtp.enviador';
 @Global()
 @Module({
   providers: [
+    DestinatariosInternosService,
     {
       provide: ENVIADOR_EMAIL,
       inject: [ConfigService],
@@ -16,6 +18,6 @@ import { SmtpEnviador } from './smtp.enviador';
           : new LogEnviador(),
     },
   ],
-  exports: [ENVIADOR_EMAIL],
+  exports: [ENVIADOR_EMAIL, DestinatariosInternosService],
 })
 export class EmailModule {}

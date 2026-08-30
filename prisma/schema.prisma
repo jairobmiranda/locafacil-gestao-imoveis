@@ -101,6 +101,12 @@ enum SituacaoNotificacao {
   CANCELADO
 }
 
+enum SituacaoAvisoPagamento {
+  PENDENTE
+  ACEITO
+  RECUSADO
+}
+
 enum TipoChavePix {
   CPF
   CNPJ
@@ -293,6 +299,7 @@ model Lancamento {
 
   itens         ItemLancamento[]
   notificacoes  Notificacao[]
+  avisosPagamento AvisoPagamento[]
 
   @@index([imovelId, competencia])
   @@index([situacao, vencimento])
@@ -509,6 +516,31 @@ model Notificacao {
   @@unique([lancamentoId, regraCobrancaId, ocorrencia])
   @@index([situacao, agendadoPara])
   @@map("notificacoes")
+}
+
+/// Pagamento informado pelo inquilino no link publico. Nao da baixa sozinho:
+/// serve de aviso para o gestor conferir e confirmar.
+model AvisoPagamento {
+  id           String @id @default(uuid()) @db.Char(36)
+  lancamentoId String @map("lancamento_id") @db.Char(36)
+
+  pagoEm         DateTime       @map("pago_em") @db.Date
+  valor          Decimal        @db.Decimal(14, 2)
+  formaPagamento FormaPagamento @map("forma_pagamento")
+  observacoes    String?        @db.VarChar(500)
+
+  /// Comprovante enviado junto, quando houver.
+  anexoId String? @map("anexo_id") @db.Char(36)
+
+  situacao SituacaoAvisoPagamento @default(PENDENTE)
+
+  criadoEm DateTime @default(now()) @map("criado_em")
+
+  lancamento Lancamento @relation(fields: [lancamentoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([situacao])
+  @@index([lancamentoId])
+  @@map("avisos_pagamento")
 }
 
 model ChavePix {

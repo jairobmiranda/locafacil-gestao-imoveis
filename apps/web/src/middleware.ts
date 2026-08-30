@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
 const COOKIE_SESSAO = 'locafacil_sessao';
-const ROTAS_PUBLICAS = ['/login'];
+const ROTAS_PUBLICAS = ['/login', '/pagamento'];
 
 export function middleware(requisicao: NextRequest) {
   const { pathname } = requisicao.nextUrl;
@@ -14,7 +14,8 @@ export function middleware(requisicao: NextRequest) {
     return NextResponse.redirect(destino);
   }
 
-  if (autenticado && rotaPublica) {
+  // O link do e-mail precisa abrir mesmo para quem esta logado no painel.
+  if (autenticado && pathname.startsWith('/login')) {
     return NextResponse.redirect(new URL('/dashboard', requisicao.url));
   }
 

@@ -22,7 +22,7 @@ export default async function PaginaNotificacoes() {
       situacao: 'PENDENTE',
       limite: 100,
     }),
-    apiGet<{ envioAtivo: boolean }>('/cobranca/configuracao'),
+    apiGet<{ envioAtivo: boolean; emailsGestor: string[] }>('/cobranca/configuracao'),
   ]);
 
   return (
@@ -30,6 +30,7 @@ export default async function PaginaNotificacoes() {
       notificacoes={notificacoes.itens}
       pendentes={pendentes.itens}
       envioAtivo={configuracao.envioAtivo}
+      emailsGestor={configuracao.emailsGestor}
     />
   );
 }

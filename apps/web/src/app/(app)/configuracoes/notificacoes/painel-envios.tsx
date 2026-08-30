@@ -8,6 +8,7 @@ import {
   cancelarNotificacao,
   processarFila,
   reenviarNotificacao,
+  salvarEmailsGestor,
   testarEmail,
   type EstadoFormulario,
 } from '../acoes';
@@ -35,16 +36,32 @@ function BotaoTeste() {
   );
 }
 
+function BotaoSalvar() {
+  const { pending } = useFormStatus();
+
+  return (
+    <button type="submit" className="botao" disabled={pending}>
+      {pending ? 'Salvando...' : 'Salvar'}
+    </button>
+  );
+}
+
 export function PainelEnvios({
   notificacoes,
   pendentes,
   envioAtivo,
+  emailsGestor,
 }: {
   notificacoes: Notificacao[];
   pendentes: Notificacao[];
   envioAtivo: boolean;
+  emailsGestor: string[];
 }) {
   const [estado, acao] = useActionState<EstadoFormulario, FormData>(testarEmail, {});
+  const [estadoGestor, acaoGestor] = useActionState<EstadoFormulario, FormData>(
+    salvarEmailsGestor,
+    {},
+  );
   const [pendente, iniciar] = useTransition();
   const [erro, setErro] = useState<string>();
 
@@ -103,6 +120,32 @@ export function PainelEnvios({
 
         {erro ? <p className="alerta-erro">{erro}</p> : null}
       </div>
+
+      <form action={acaoGestor} className="cartao formulario">
+        <div className="cabecalho-secao">
+          <h2>Avisos internos</h2>
+        </div>
+
+        <p className="texto-suave">
+          Quem recebe os avisos da gestão, como o pagamento informado pelo inquilino no link
+          público. Separe vários endereços por ponto e vírgula.
+        </p>
+
+        <div className="linha-teste">
+          <label className={estadoGestor.campos?.emailsGestor ? 'campo com-erro' : 'campo'}>
+            Destinatários
+            <input
+              name="emailsGestor"
+              defaultValue={emailsGestor.join('; ')}
+              placeholder="financeiro@exemplo.com; voce@exemplo.com"
+            />
+          </label>
+          <BotaoSalvar />
+        </div>
+
+        {estadoGestor.erro ? <p className="alerta-erro">{estadoGestor.erro}</p> : null}
+        {estadoGestor.sucesso ? <p className="alerta-sucesso">{estadoGestor.sucesso}</p> : null}
+      </form>
 
       <form action={acao} className="cartao formulario">
         <div className="cabecalho-secao">

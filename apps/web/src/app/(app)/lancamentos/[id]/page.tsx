@@ -54,6 +54,16 @@ type LancamentoDetalhe = {
   categoria: { id: string; nome: string };
   pessoa: { id: string; nome: string } | null;
   itens: { id: string; descricao: string; valor: number }[];
+  avisosPagamento: {
+    id: string;
+    pagoEm: string;
+    valor: number;
+    formaPagamento: string;
+    observacoes: string | null;
+    anexoId: string | null;
+    situacao: string;
+    criadoEm: string;
+  }[];
 };
 
 export default async function PaginaLancamento({ params }: { params: Promise<{ id: string }> }) {
@@ -162,6 +172,64 @@ export default async function PaginaLancamento({ params }: { params: Promise<{ i
             <h2>Enviar alerta de cobrança</h2>
           </div>
           <EnviarAlerta id={lancamento.id} modelos={modelos.filter((modelo) => modelo.ativo)} />
+        </section>
+      ) : null}
+
+      {lancamento.avisosPagamento.length > 0 ? (
+        <section>
+          <div className="cabecalho-secao">
+            <h2>Pagamentos informados pelo inquilino</h2>
+          </div>
+          <div className="cartao">
+            <table className="tabela">
+              <thead>
+                <tr>
+                  <th>Informado em</th>
+                  <th>Pago em</th>
+                  <th>Forma</th>
+                  <th>Comprovante</th>
+                  <th>Situação</th>
+                  <th className="direita">Valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lancamento.avisosPagamento.map((aviso) => (
+                  <tr key={aviso.id}>
+                    <td data-label="Informado em">{formatarDataHora(aviso.criadoEm)}</td>
+                    <td data-label="Pago em">
+                      {formatarData(aviso.pagoEm)}
+                      {aviso.observacoes ? (
+                        <small className="texto-suave">{aviso.observacoes}</small>
+                      ) : null}
+                    </td>
+                    <td data-label="Forma">{rotular(aviso.formaPagamento)}</td>
+                    <td data-label="Comprovante">
+                      {aviso.anexoId ? (
+                        <a
+                          href={`/api/anexos/${aviso.anexoId}`}
+                          className="link"
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Abrir
+                        </a>
+                      ) : (
+                        'sem anexo'
+                      )}
+                    </td>
+                    <td data-label="Situação">
+                      <span className={`etiqueta situacao-${aviso.situacao.toLowerCase()}`}>
+                        {rotular(aviso.situacao)}
+                      </span>
+                    </td>
+                    <td className="direita" data-label="Valor">
+                      {formatarMoeda(aviso.valor)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </section>
       ) : null}
 

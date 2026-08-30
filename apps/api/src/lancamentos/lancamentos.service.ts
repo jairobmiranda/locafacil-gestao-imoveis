@@ -20,6 +20,7 @@ const INCLUI_DETALHE = {
   categoria: { select: { id: true, nome: true, natureza: true } },
   imovel: { select: { id: true, apelido: true } },
   pessoa: { select: { id: true, nome: true } },
+  avisosPagamento: { orderBy: { criadoEm: 'desc' } },
 } satisfies Prisma.LancamentoInclude;
 
 @Injectable()
@@ -157,6 +158,11 @@ export class LancamentosService {
       await tx.notificacao.updateMany({
         where: { lancamentoId: id, situacao: 'PENDENTE' },
         data: { situacao: 'CANCELADO' },
+      });
+
+      await tx.avisoPagamento.updateMany({
+        where: { lancamentoId: id, situacao: 'PENDENTE' },
+        data: { situacao: 'ACEITO' },
       });
 
       return tx.lancamento.update({

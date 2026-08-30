@@ -80,10 +80,19 @@ export const baixarLancamentoSchema = z.object({
   observacoes: z.string().optional(),
 });
 
+/** Enviado pelo inquilino no link publico; nao da baixa, apenas avisa. */
+export const informarPagamentoSchema = z.object({
+  pagoEm: z.coerce.date(),
+  valor: z.coerce.number().positive(),
+  formaPagamento: formaPagamentoSchema,
+  observacoes: z.string().max(500).optional(),
+});
+
 export type CriarLancamentoDto = z.infer<typeof criarLancamentoSchema>;
 export type AtualizarLancamentoDto = z.infer<typeof atualizarLancamentoSchema>;
 export type ListarLancamentosDto = z.infer<typeof listarLancamentosSchema>;
 export type BaixarLancamentoDto = z.infer<typeof baixarLancamentoSchema>;
+export type InformarPagamentoDto = z.infer<typeof informarPagamentoSchema>;
 export type Natureza = z.infer<typeof naturezaSchema>;
 export type SituacaoLancamento = z.infer<typeof situacaoLancamentoSchema>;
 export type FormaPagamento = z.infer<typeof formaPagamentoSchema>;

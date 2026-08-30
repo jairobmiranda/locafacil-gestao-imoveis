@@ -16,6 +16,7 @@ import { LancamentosModule } from './lancamentos/lancamentos.module';
 import { PessoasModule } from './pessoas/pessoas.module';
 import { PixModule } from './pix/pix.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { PublicoModule } from './publico/publico.module';
 import { SaudeController } from './saude/saude.controller';
 import { UsuariosModule } from './usuarios/usuarios.module';
 
@@ -35,6 +36,7 @@ import { UsuariosModule } from './usuarios/usuarios.module';
     LancamentosModule,
     PessoasModule,
     PixModule,
+    PublicoModule,
     UsuariosModule,
   ],
   controllers: [SaudeController],

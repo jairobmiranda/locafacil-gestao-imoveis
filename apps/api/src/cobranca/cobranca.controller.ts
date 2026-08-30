@@ -10,6 +10,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Put,
   Query,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -23,6 +24,7 @@ import {
   criarReguaCobrancaSchema,
   enviarCobrancaManualSchema,
   listarNotificacoesSchema,
+  salvarEmailsGestorSchema,
   testarEmailSchema,
   VARIAVEIS_MODELO_EMAIL,
   type AtualizarModeloEmailDto,
@@ -33,9 +35,11 @@ import {
   type CriarReguaCobrancaDto,
   type EnviarCobrancaManualDto,
   type ListarNotificacoesDto,
+  type SalvarEmailsGestorDto,
   type TestarEmailDto,
 } from '@locafacil/contracts';
 import { ZodValidationPipe } from '../comum/zod-validation.pipe';
+import { DestinatariosInternosService } from '../email/destinatarios-internos.service';
 import { ENVIADOR_EMAIL, type EnviadorEmail } from '../email/enviador-email';
 import { CobrancaService } from './cobranca.service';
 import { EnvioNotificacoesService } from './envio-notificacoes.service';
@@ -51,12 +55,24 @@ export class CobrancaController {
     private readonly envio: EnvioNotificacoesService,
     @Inject(ENVIADOR_EMAIL) private readonly enviador: EnviadorEmail,
     private readonly config: ConfigService,
+    private readonly destinatarios: DestinatariosInternosService,
   ) {}
 
   @Get('configuracao')
   @ApiOperation({ summary: 'Estado do envio de e-mails' })
-  configuracao() {
-    return { envioAtivo: this.config.get<string>('EMAIL_ENVIO_ATIVO') === 'true' };
+  async configuracao() {
+    return {
+      envioAtivo: this.config.get<string>('EMAIL_ENVIO_ATIVO') === 'true',
+      emailsGestor: await this.destinatarios.listar(),
+    };
+  }
+
+  @Put('configuracao/emails-gestor')
+  @ApiOperation({ summary: 'Define quem recebe os avisos internos' })
+  salvarEmailsGestor(
+    @Body(new ZodValidationPipe(salvarEmailsGestorSchema)) dados: SalvarEmailsGestorDto,
+  ) {
+    return this.destinatarios.salvar(dados.emailsGestor);
   }
 
   @Get('variaveis')

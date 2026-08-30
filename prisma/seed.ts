@@ -49,7 +49,7 @@ const VARIAVEIS = [
   'cobranca.valor_juros',
   'pix.copia_e_cola',
   'pix.qrcode_url',
-  'link_segunda_via',
+  'link_pagamento',
 ];
 
 function layout(titulo: string, miolo: string, comPix = true): string {
@@ -71,8 +71,14 @@ function layout(titulo: string, miolo: string, comPix = true): string {
       ${miolo}
       {{cobranca.itens}}
       ${blocoPix}
+      <p style="margin:28px 0 8px;">Já pagou? Avise por aqui:</p>
+      <p style="margin:0 0 8px;">
+        <a href="{{link_pagamento}}"
+           style="display:inline-block;background:#18181b;color:#fff;text-decoration:none;
+                  border-radius:6px;padding:12px 20px;font-weight:bold;">Confirmar pagamento</a>
+      </p>
       <p style="margin:24px 0 0;font-size:12px;color:#71717a;">
-        Segunda via e comprovantes em <a href="{{link_segunda_via}}">{{link_segunda_via}}</a>.
+        Se o botão não abrir, copie este endereço: {{link_pagamento}}
       </p>
     </div>
   </body>

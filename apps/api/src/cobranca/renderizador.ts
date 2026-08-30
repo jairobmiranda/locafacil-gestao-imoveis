@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client';
+import { gerarTokenPublico } from '../comum/link-assinado';
 import { calcularEncargos } from '../lancamentos/encargos';
 
 const FORMATO_MOEDA = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -10,6 +11,13 @@ const FORMATO_MES = new Intl.DateTimeFormat('pt-BR', {
 });
 
 export const CID_QRCODE = 'qrcode-pix';
+
+/** Pagina publica onde o inquilino avisa que pagou. */
+function linkPagamento(lancamentoId: string): string {
+  const base = (process.env.APP_URL ?? '').replace(/\/$/, '');
+
+  return `${base}/pagamento/${gerarTokenPublico('pagamento', lancamentoId)}`;
+}
 
 /** Valores vindos do banco entram em HTML de modelo editavel pelo usuario. */
 function escaparHtml(texto: string): string {
@@ -88,6 +96,7 @@ export function montarVariaveis(
     'cobranca.dias_atraso': String(encargos.diasAtraso),
     'cobranca.itens': itens,
     'pix.copia_e_cola': escaparHtml(lancamento.pixPayload ?? ''),
+    'link_pagamento': linkPagamento(lancamento.id),
     // Endereco da imagem embutida, para usar dentro de src="".
     'pix.qrcode_url': lancamento.pixPayload ? `cid:${CID_QRCODE}` : '',
     'pix.qrcode': lancamento.pixPayload

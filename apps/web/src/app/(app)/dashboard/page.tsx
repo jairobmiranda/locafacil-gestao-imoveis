@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { apiGet } from '@/lib/api';
-import { formatarData, formatarMoeda, rotular } from '@/lib/formato';
+import { formatarData, formatarDataHora, formatarMoeda, rotular } from '@/lib/formato';
 
 type Resumo = {
   imoveis: { total: number; porEstrategia: Record<string, number> };
@@ -50,6 +50,18 @@ type Alertas = {
     imovel: { id: string; apelido: string };
     pessoa: { id: string; nome: string } | null;
   }[];
+  pagamentosInformados: {
+    id: string;
+    valor: number;
+    pagoEm: string;
+    criadoEm: string;
+    anexoId: string | null;
+    lancamento: {
+      id: string;
+      descricao: string;
+      imovel: { id: string; apelido: string };
+    };
+  }[];
 };
 
 function percentual(valor: number | null, casas = 1): string {
@@ -81,8 +93,7 @@ export default async function PaginaDashboard() {
         <div className="cartao indicador">
           <span className="texto-suave">Recebido no mês</span>
           <strong className="positivo">{formatarMoeda(resumo.mes.recebido)}</strong>
-        </div>
-        <div className="cartao indicador">
+        </div>        <div className="cartao indicador">
           <span className="texto-suave">Gasto no mês</span>
           <strong className="negativo">{formatarMoeda(resumo.mes.gasto)}</strong>
         </div>
@@ -103,6 +114,47 @@ export default async function PaginaDashboard() {
           </span>
         </div>
       </div>
+
+      {alertas.pagamentosInformados.length > 0 ? (
+        <section>
+          <div className="cabecalho-secao">
+            <h2>Pagamentos informados</h2>
+            <span className="texto-suave">Aguardando sua confirmação</span>
+          </div>
+          <div className="cartao">
+            <table className="tabela">
+              <thead>
+                <tr>
+                  <th>Cobrança</th>
+                  <th>Imóvel</th>
+                  <th>Informado em</th>
+                  <th>Pago em</th>
+                  <th>Comprovante</th>
+                  <th className="direita">Valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {alertas.pagamentosInformados.map((aviso) => (
+                  <tr key={aviso.id}>
+                    <td>
+                      <Link href={`/lancamentos/${aviso.lancamento.id}`} className="link">
+                        {aviso.lancamento.descricao}
+                      </Link>
+                    </td>
+                    <td data-label="Imóvel">{aviso.lancamento.imovel.apelido}</td>
+                    <td data-label="Informado em">{formatarDataHora(aviso.criadoEm)}</td>
+                    <td data-label="Pago em">{formatarData(aviso.pagoEm)}</td>
+                    <td data-label="Comprovante">{aviso.anexoId ? 'sim' : 'não'}</td>
+                    <td className="direita" data-label="Valor">
+                      {formatarMoeda(aviso.valor)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
 
       {locacoes.length > 0 ? (
         <section>

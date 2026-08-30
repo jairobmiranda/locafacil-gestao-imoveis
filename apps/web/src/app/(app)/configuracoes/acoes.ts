@@ -170,6 +170,14 @@ export async function criarRegua(
   return { sucesso: 'Régua criada' };
 }
 
+export async function definirModeloConsolidado(
+  id: string,
+  modeloConsolidadoId: string | null,
+): Promise<void> {
+  await apiPatch(`/cobranca/reguas/${id}`, { modeloConsolidadoId });
+  revalidatePath('/configuracoes/regua');
+}
+
 export async function salvarRegra(
   _anterior: EstadoFormulario,
   dados: FormData,
@@ -243,6 +251,23 @@ export async function salvarEmailsGestor(
   revalidatePath('/configuracoes/notificacoes');
 
   return { sucesso: 'Destinatários salvos' };
+}
+
+export async function salvarParametrosCobranca(
+  _anterior: EstadoFormulario,
+  dados: FormData,
+): Promise<EstadoFormulario> {
+  try {
+    await apiPut('/cobranca/configuracao/parametros', {
+      maximoEmailsDia: String(dados.get('maximoEmailsDia') ?? '1'),
+    });
+  } catch (erro) {
+    return traduzir(erro);
+  }
+
+  revalidatePath('/configuracoes/notificacoes');
+
+  return { sucesso: 'Limite salvo' };
 }
 
 export async function agendarRegua(): Promise<void> {

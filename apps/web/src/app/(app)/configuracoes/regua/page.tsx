@@ -6,6 +6,7 @@ type Regua = {
   nome: string;
   padrao: boolean;
   ativa: boolean;
+  modeloConsolidado: { id: string; nome: string } | null;
   regras: {
     id: string;
     sequencia: number;

@@ -436,6 +436,7 @@ model ModeloEmail {
 
   regras       RegraCobranca[]
   notificacoes Notificacao[]
+  reguasConsolidado ReguaCobranca[] @relation("ModeloConsolidado")
 
   @@map("modelos_email")
 }
@@ -446,8 +447,14 @@ model ReguaCobranca {
   padrao Boolean @default(false)
   ativa  Boolean @default(true)
 
+  /// Usado quando o inquilino tem mais de uma cobranca vencendo no mesmo disparo.
+  /// Sem modelo definido, cada cobranca sai em um e-mail proprio.
+  modeloConsolidadoId String? @map("modelo_consolidado_id") @db.Char(36)
+
   criadoEm     DateTime @default(now()) @map("criado_em")
   atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  modeloConsolidado ModeloEmail? @relation("ModeloConsolidado", fields: [modeloConsolidadoId], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   regras    RegraCobranca[]
   contratos Contrato[]
@@ -506,6 +513,9 @@ model Notificacao {
   tentativas   Int                 @default(0)
   mensagemErro String?             @map("mensagem_erro") @db.Text
   idProvedor   String?             @map("id_provedor") @db.VarChar(200)
+
+  /// Pix somado do e-mail consolidado, que nao pertence a nenhum lancamento isolado.
+  pixPayload String? @map("pix_payload") @db.Text
 
   criadoEm DateTime @default(now()) @map("criado_em")
 

@@ -111,6 +111,70 @@ export function renderizar(modelo: string, variaveis: Record<string, string>): s
   );
 }
 
+/**
+ * Varias parcelas em aberto viram um e-mail so. As variaveis de `cobranca.*`
+ * seguem apontando para a mais antiga, para os modelos continuarem funcionando.
+ */
+export function montarVariaveisConsolidado(
+  cobrancas: LancamentoParaEmail[],
+  inquilino: { nome: string },
+  referencia: Date,
+  pixPayload: string | null,
+): Record<string, string> {
+  const [maisAntiga] = cobrancas;
+
+  if (!maisAntiga) {
+    throw new Error('Consolidado exige ao menos uma cobrança');
+  }
+
+  const encargos = cobrancas.map((cobranca) =>
+    calcularEncargos(cobranca.valor, cobranca.vencimento, referencia, cobranca.contrato),
+  );
+
+  const total = encargos.reduce((soma, item) => soma.plus(item.totalDevido), new Prisma.Decimal(0));
+  const multa = encargos.reduce((soma, item) => soma.plus(item.valorMulta), new Prisma.Decimal(0));
+  const juros = encargos.reduce((soma, item) => soma.plus(item.valorJuros), new Prisma.Decimal(0));
+
+  const linhas = cobrancas
+    .map((cobranca, indice) => {
+      const vencimento = cobranca.vencimento ? FORMATO_DATA.format(cobranca.vencimento) : '';
+      const devido = encargos[indice]?.totalDevido ?? new Prisma.Decimal(0);
+
+      return (
+        `<tr><td style="padding:4px 12px 4px 0">${FORMATO_MES.format(cobranca.competencia)}</td>` +
+        `<td style="padding:4px 12px 4px 0">${vencimento}</td>` +
+        `<td style="padding:4px 0;text-align:right">${FORMATO_MOEDA.format(devido.toNumber())}</td></tr>`
+      );
+    })
+    .join('');
+
+  return {
+    ...montarVariaveis(maisAntiga, inquilino, referencia),
+    'cobrancas.quantidade': String(cobrancas.length),
+    'cobrancas.total': FORMATO_MOEDA.format(total.toNumber()),
+    'cobrancas.multa': FORMATO_MOEDA.format(multa.toNumber()),
+    'cobrancas.juros': FORMATO_MOEDA.format(juros.toNumber()),
+    'cobrancas.competencias': cobrancas
+      .map((cobranca) => FORMATO_MES.format(cobranca.competencia))
+      .join(', '),
+    'cobrancas.vencimento_mais_antigo': maisAntiga.vencimento
+      ? FORMATO_DATA.format(maisAntiga.vencimento)
+      : '',
+    'cobrancas.tabela':
+      `<table style="border-collapse:collapse">` +
+      `<tr><th style="text-align:left;padding:4px 12px 4px 0">Competência</th>` +
+      `<th style="text-align:left;padding:4px 12px 4px 0">Vencimento</th>` +
+      `<th style="text-align:right;padding:4px 0">Valor</th></tr>` +
+      `${linhas}</table>`,
+    // O Pix do consolidado soma tudo, entao substitui o do lancamento mais antigo.
+    'pix.copia_e_cola': escaparHtml(pixPayload ?? ''),
+    'pix.qrcode_url': pixPayload ? `cid:${CID_QRCODE}` : '',
+    'pix.qrcode': pixPayload
+      ? `<img src="cid:${CID_QRCODE}" alt="QR Code Pix" width="220" height="220" />`
+      : '',
+  };
+}
+
 export function paraTextoSimples(html: string): string {
   return html
     .replace(/<br\s*\/?>/gi, '\n')

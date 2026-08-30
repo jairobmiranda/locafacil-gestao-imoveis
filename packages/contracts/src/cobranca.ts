@@ -30,6 +30,8 @@ export const criarReguaCobrancaSchema = z.object({
   nome: z.string().min(1).max(100),
   padrao: z.boolean().default(false),
   ativa: z.boolean().default(true),
+  /** Usado quando o inquilino tem mais de uma parcela caindo na mesma etapa. */
+  modeloConsolidadoId: z.string().uuid().nullish(),
 });
 
 export const atualizarReguaCobrancaSchema = criarReguaCobrancaSchema.partial();
@@ -57,6 +59,11 @@ export const listarNotificacoesSchema = paginacaoSchema.extend({
 
 export const testarEmailSchema = z.object({
   destinatario: z.string().email(),
+});
+
+export const salvarParametrosCobrancaSchema = z.object({
+  /** Teto diario de cobrancas por endereco, para nao inundar quem tem varias parcelas em aberto. */
+  maximoEmailsDia: z.coerce.number().int().min(1).max(10),
 });
 
 /** Aceita varios enderecos separados por ponto e virgula ou virgula. */
@@ -88,6 +95,7 @@ export type AtualizarRegraCobrancaDto = z.infer<typeof atualizarRegraCobrancaSch
 export type ListarNotificacoesDto = z.infer<typeof listarNotificacoesSchema>;
 export type TestarEmailDto = z.infer<typeof testarEmailSchema>;
 export type SalvarEmailsGestorDto = z.infer<typeof salvarEmailsGestorSchema>;
+export type SalvarParametrosCobrancaDto = z.infer<typeof salvarParametrosCobrancaSchema>;
 export type EnviarCobrancaManualDto = z.infer<typeof enviarCobrancaManualSchema>;
 
 /** Variaveis aceitas no assunto e no corpo dos modelos. */
@@ -109,4 +117,12 @@ export const VARIAVEIS_MODELO_EMAIL = [
   'pix.qrcode',
   'pix.qrcode_url',
   'link_pagamento',
+  // Só fazem sentido no modelo consolidado, quando ha mais de uma parcela em aberto.
+  'cobrancas.quantidade',
+  'cobrancas.total',
+  'cobrancas.multa',
+  'cobrancas.juros',
+  'cobrancas.competencias',
+  'cobrancas.vencimento_mais_antigo',
+  'cobrancas.tabela',
 ] as const;

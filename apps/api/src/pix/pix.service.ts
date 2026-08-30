@@ -97,6 +97,25 @@ export class PixService {
     };
   }
 
+  /** BR Code avulso, sem vinculo com um lancamento. Usado no Pix somado da cobranca consolidada. */
+  async montarPayload(dados: {
+    chavePixId?: string | null;
+    valor: number;
+    txid: string;
+    descricao: string;
+  }): Promise<string> {
+    const chave = await this.resolverChave(dados.chavePixId);
+
+    return gerarBrCode({
+      chave: chave.chave,
+      nomeBeneficiario: chave.nomeBeneficiario,
+      cidadeBeneficiario: chave.cidadeBeneficiario,
+      valor: dados.valor,
+      txid: higienizarTxid(dados.txid),
+      descricao: dados.descricao,
+    });
+  }
+
   private async buscarChave(id: string) {
     const chave = await this.prisma.chavePix.findUnique({ where: { id } });
 

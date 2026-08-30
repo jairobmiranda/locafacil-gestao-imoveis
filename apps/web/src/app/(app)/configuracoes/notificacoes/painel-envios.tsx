@@ -9,6 +9,7 @@ import {
   processarFila,
   reenviarNotificacao,
   salvarEmailsGestor,
+  salvarParametrosCobranca,
   testarEmail,
   type EstadoFormulario,
 } from '../acoes';
@@ -51,15 +52,21 @@ export function PainelEnvios({
   pendentes,
   envioAtivo,
   emailsGestor,
+  maximoEmailsDia,
 }: {
   notificacoes: Notificacao[];
   pendentes: Notificacao[];
   envioAtivo: boolean;
   emailsGestor: string[];
+  maximoEmailsDia: number;
 }) {
   const [estado, acao] = useActionState<EstadoFormulario, FormData>(testarEmail, {});
   const [estadoGestor, acaoGestor] = useActionState<EstadoFormulario, FormData>(
     salvarEmailsGestor,
+    {},
+  );
+  const [estadoParametros, acaoParametros] = useActionState<EstadoFormulario, FormData>(
+    salvarParametrosCobranca,
     {},
   );
   const [pendente, iniciar] = useTransition();
@@ -120,6 +127,36 @@ export function PainelEnvios({
 
         {erro ? <p className="alerta-erro">{erro}</p> : null}
       </div>
+
+      <form action={acaoParametros} className="cartao formulario">
+        <div className="cabecalho-secao">
+          <h2>Limite de cobranças</h2>
+        </div>
+
+        <p className="texto-suave">
+          Quando o inquilino tem várias parcelas em aberto, a régua agenda uma cobrança para cada
+          uma. Este limite evita a enxurrada: o que passar do teto espera o dia seguinte.
+        </p>
+
+        <div className="linha-teste">
+          <label className="campo">
+            Máximo por destinatário por dia
+            <input
+              name="maximoEmailsDia"
+              type="number"
+              min={1}
+              max={10}
+              defaultValue={maximoEmailsDia}
+            />
+          </label>
+          <BotaoSalvar />
+        </div>
+
+        {estadoParametros.erro ? <p className="alerta-erro">{estadoParametros.erro}</p> : null}
+        {estadoParametros.sucesso ? (
+          <p className="alerta-sucesso">{estadoParametros.sucesso}</p>
+        ) : null}
+      </form>
 
       <form action={acaoGestor} className="cartao formulario">
         <div className="cabecalho-secao">

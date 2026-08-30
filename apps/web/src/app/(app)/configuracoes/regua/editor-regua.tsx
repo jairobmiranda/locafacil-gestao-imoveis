@@ -5,6 +5,7 @@ import { useFormStatus } from 'react-dom';
 import {
   alternarRegraAtiva,
   criarRegua,
+  definirModeloConsolidado,
   removerRegra,
   salvarRegra,
   type EstadoFormulario,
@@ -27,6 +28,7 @@ type Regua = {
   nome: string;
   padrao: boolean;
   ativa: boolean;
+  modeloConsolidado: { id: string; nome: string } | null;
   regras: Regra[];
 };
 
@@ -192,6 +194,28 @@ export function EditorRegua({
           <h2>{regua.nome}</h2>
           {regua.padrao ? <span className="etiqueta situacao-ativo">padrão</span> : null}
         </div>
+
+        <label className="campo">
+          Modelo para débitos acumulados
+          <select
+            value={regua.modeloConsolidado?.id ?? ''}
+            disabled={pendente}
+            onChange={(evento) =>
+              executar(() => definirModeloConsolidado(reguaId, evento.target.value || null))
+            }
+          >
+            <option value="">Não consolidar (um e-mail por cobrança)</option>
+            {modelos.map((modelo) => (
+              <option key={modelo.id} value={modelo.id}>
+                {modelo.nome}
+              </option>
+            ))}
+          </select>
+          <small className="texto-suave">
+            Quando mais de uma parcela cai na mesma etapa, elas viram um único e-mail com Pix
+            somado
+          </small>
+        </label>
 
         {regua.regras.length === 0 ? (
           <p className="texto-suave">Nenhuma etapa configurada.</p>

@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { toBuffer } from 'qrcode';
 import { ENVIADOR_EMAIL, type AnexoEmail, type EnviadorEmail } from '../email/enviador-email';
 import { PrismaService } from '../prisma/prisma.service';
+import { ParametrosCobrancaService } from './parametros-cobranca.service';
 import { CID_QRCODE, paraTextoSimples } from './renderizador';
 
 const MAXIMO_TENTATIVAS = 3;
@@ -19,11 +20,13 @@ export class EnvioNotificacoesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
+    private readonly parametros: ParametrosCobrancaService,
     @Inject(ENVIADOR_EMAIL) private readonly enviador: EnviadorEmail,
   ) {}
 
-  async processarFila(): Promise<{ enviadas: number; falhas: number }> {
+  async processarFila(): Promise<{ enviadas: number; falhas: number; adiadas: number }> {
     const lote = Number(this.config.get<string>('EMAIL_LOTE') ?? 20);
+    const teto = await this.parametros.maximoEmailsDia();
 
     const pendentes = await this.prisma.notificacao.findMany({
       where: {
@@ -36,29 +39,82 @@ export class EnvioNotificacoesService {
       take: lote,
     });
 
+    const enviadasHoje = await this.contarEnviadasHoje(
+      pendentes.map((notificacao) => notificacao.destinatario),
+    );
+
     let enviadas = 0;
     let falhas = 0;
+    let adiadas = 0;
 
     for (const notificacao of pendentes) {
+      const jaEnviadas = enviadasHoje.get(notificacao.destinatario) ?? 0;
+
+      if (jaEnviadas >= teto) {
+        await this.adiar(notificacao, teto);
+        adiadas += 1;
+        continue;
+      }
+
       if (await this.despachar(notificacao)) {
         enviadas += 1;
+        enviadasHoje.set(notificacao.destinatario, jaEnviadas + 1);
       } else {
         falhas += 1;
       }
     }
 
-    if (enviadas || falhas) {
-      this.logger.log(`Fila de e-mail: ${enviadas} enviada(s), ${falhas} falha(s)`);
+    if (enviadas || falhas || adiadas) {
+      this.logger.log(
+        `Fila de e-mail: ${enviadas} enviada(s), ${falhas} falha(s), ${adiadas} adiada(s)`,
+      );
     }
 
-    return { enviadas, falhas };
+    return { enviadas, falhas, adiadas };
+  }
+
+  /** O teto vale por dia civil, contando o que ja saiu antes desta rodada. */
+  private async contarEnviadasHoje(destinatarios: string[]): Promise<Map<string, number>> {
+    if (destinatarios.length === 0) {
+      return new Map();
+    }
+
+    const inicioDoDia = new Date();
+    inicioDoDia.setHours(0, 0, 0, 0);
+
+    const contagem = await this.prisma.notificacao.groupBy({
+      by: ['destinatario'],
+      where: {
+        situacao: 'ENVIADO',
+        enviadoEm: { gte: inicioDoDia },
+        destinatario: { in: [...new Set(destinatarios)] },
+      },
+      _count: { _all: true },
+    });
+
+    return new Map(contagem.map((item) => [item.destinatario, item._count._all]));
+  }
+
+  /** Nada se perde: a cobranca excedente apenas espera o proximo dia. */
+  private async adiar(notificacao: NotificacaoNaFila, teto: number): Promise<void> {
+    const amanha = new Date(notificacao.agendadoPara);
+    amanha.setDate(amanha.getDate() + 1);
+
+    await this.prisma.notificacao.update({
+      where: { id: notificacao.id },
+      data: {
+        agendadoPara: amanha,
+        mensagemErro: `Adiada: o destinatário já recebeu ${teto} cobrança(s) hoje`,
+      },
+    });
   }
 
   /** Retorna false quando a tentativa falhou; o erro fica registrado na propria notificacao. */
   private async despachar(notificacao: NotificacaoNaFila): Promise<boolean> {
     // So anexa o QR quando o corpo referencia o CID, senao ele viraria um anexo solto.
+    // O payload da propria notificacao vem do consolidado e tem prioridade.
     const pixPayload = notificacao.corpoRenderizado.includes(CID_QRCODE)
-      ? (notificacao.lancamento?.pixPayload ?? null)
+      ? (notificacao.pixPayload ?? notificacao.lancamento?.pixPayload ?? null)
       : null;
 
     try {

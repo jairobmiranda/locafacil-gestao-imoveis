@@ -50,6 +50,11 @@ const VARIAVEIS = [
   'pix.copia_e_cola',
   'pix.qrcode_url',
   'link_pagamento',
+  'cobrancas.quantidade',
+  'cobrancas.total',
+  'cobrancas.competencias',
+  'cobrancas.vencimento_mais_antigo',
+  'cobrancas.tabela',
 ];
 
 function layout(titulo: string, miolo: string, comPix = true): string {
@@ -134,6 +139,22 @@ const MODELOS = [
          <li>Juros: {{cobranca.valor_juros}}</li>
          <li><strong>Total atualizado: {{cobranca.valor_total}}</strong></li>
        </ul>`,
+    ),
+  },
+  {
+    chave: 'cobranca_consolidada',
+    nome: 'Débitos em aberto (consolidado)',
+    assunto: 'Você tem {{cobrancas.quantidade}} aluguéis em aberto',
+    corpoHtml: layout(
+      'Resumo dos valores em aberto',
+      `<p style="margin:0 0 16px;">O imóvel <strong>{{imovel.apelido}}</strong> tem
+       <strong>{{cobrancas.quantidade}}</strong> cobranças em aberto, a mais antiga vencida em
+       {{cobrancas.vencimento_mais_antigo}}.</p>
+       {{cobrancas.tabela}}
+       <p style="margin:16px 0;">Multa e juros já inclusos:
+       <strong>{{cobrancas.total}}</strong>.</p>
+       <p style="margin:0 0 16px;">O Pix abaixo quita tudo de uma vez. Para pagar em separado ou
+       negociar, entrar em contato com o proprietário.</p>`,
     ),
   },
 ];
@@ -263,6 +284,17 @@ async function main() {
     (await prisma.reguaCobranca.create({
       data: { nome: 'Régua padrão', padrao: true },
     }));
+
+  const consolidado = await prisma.modeloEmail.findUniqueOrThrow({
+    where: { chave: 'cobranca_consolidada' },
+  });
+
+  if (!regua.modeloConsolidadoId) {
+    await prisma.reguaCobranca.update({
+      where: { id: regua.id },
+      data: { modeloConsolidadoId: consolidado.id },
+    });
+  }
 
   for (const regra of REGRAS) {
     const modelo = await prisma.modeloEmail.findUniqueOrThrow({

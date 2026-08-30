@@ -46,7 +46,10 @@ export class CobrancaService {
 
   listarReguas() {
     return this.prisma.reguaCobranca.findMany({
-      include: { regras: { include: { modeloEmail: { select: { id: true, nome: true } } }, orderBy: { sequencia: 'asc' } } },
+      include: {
+        regras: { include: { modeloEmail: { select: { id: true, nome: true } } }, orderBy: { sequencia: 'asc' } },
+        modeloConsolidado: { select: { id: true, nome: true } },
+      },
       orderBy: [{ padrao: 'desc' }, { nome: 'asc' }],
     });
   }

@@ -22,7 +22,7 @@ import { ORDEM_GRUPOS, type Clausula } from './tipos';
 export * from './tipos';
 
 /** Sobe quando qualquer clausula muda. Fica gravado na minuta para auditoria. */
-export const VERSAO_MODELO = 1;
+export const VERSAO_MODELO = 2;
 
 export const BIBLIOTECA: Clausula[] = [
   ...CLAUSULAS_OBJETO,
@@ -170,6 +170,36 @@ export function avaliarRiscos(ctx: ContextoMinuta): AlertaMinuta[] {
     );
   }
 
+  if (ctx.finalidade === 'TEMPORADA' && ctx.prazoMeses > 3) {
+    alertas.push(
+      alerta(
+        'BLOQUEIO',
+        'Locação por temporada não pode exceder 90 dias (Lei 8.245/91, art. 48). Acima disso o contrato é tratado como locação comum e o aluguel antecipado se torna indevido.',
+        'PRAZO',
+      ),
+    );
+  }
+
+  if (ctx.finalidade === 'NAO_RESIDENCIAL' && ctx.prazoMeses >= 60) {
+    alertas.push(
+      alerta(
+        'INFO',
+        'Locação não residencial com 5 anos ou mais: o locatário passa a ter direito à renovação compulsória (Lei 8.245/91, art. 51), o que dificulta a retomada ao final do prazo.',
+        'PRAZO',
+      ),
+    );
+  }
+
+  if (ctx.tipoGarantia === 'NENHUMA' && ctx.diaVencimento > 6) {
+    alertas.push(
+      alerta(
+        'ATENCAO',
+        `Sem garantia, o aluguel é antecipado e só pode ser exigido até o sexto dia útil do mês vincendo (art. 42). O vencimento no dia ${ctx.diaVencimento} pode extrapolar esse limite.`,
+        'SEM_GARANTIA',
+      ),
+    );
+  }
+
   if (ctx.respostas.multaRescisoriaAlugueis > 3) {
     alertas.push(
       alerta(
@@ -192,6 +222,16 @@ export function avaliarRiscos(ctx: ContextoMinuta): AlertaMinuta[] {
         'ATENCAO',
         'Juros de mora acima de 1% ao mês (0,0333% ao dia) extrapolam o limite do art. 406 do Código Civil.',
         'MORA',
+      ),
+    );
+  }
+
+  if (ctx.descontoPontualidade > 0 && ctx.descontoPontualidade > ctx.valorAluguel * 0.1) {
+    alertas.push(
+      alerta(
+        'ATENCAO',
+        'Desconto de pontualidade acima de 10% do aluguel costuma ser requalificado como multa moratória disfarçada, com redução ao teto de 10% e devolução da diferença.',
+        'DESCONTO_PONTUALIDADE',
       ),
     );
   }
@@ -234,8 +274,28 @@ export function avaliarRiscos(ctx: ContextoMinuta): AlertaMinuta[] {
     alertas.push(
       alerta(
         'ATENCAO',
-        'O contrato só é título executivo extrajudicial com duas testemunhas assinando. Cadastre as testemunhas antes de coletar as assinaturas.',
+        'Você optou por incluir duas testemunhas, mas nenhuma dupla foi cadastrada. O contrato de locação já é título executivo pelo art. 784, VIII, do CPC, ainda assim as testemunhas reforçam a prova em juízo.',
         'TITULO_EXECUTIVO',
+      ),
+    );
+  }
+
+  const foro = ctx.foro.trim().toLowerCase();
+  const cidadeImovel = ctx.imovel.cidade.trim().toLowerCase();
+  const domicilios = [...ctx.locadores, ...ctx.locatarios].map((parte) =>
+    parte.qualificacao.toLowerCase(),
+  );
+
+  if (
+    foro.length > 0 &&
+    !foro.includes(cidadeImovel) &&
+    !domicilios.some((qualificacao) => qualificacao.includes(foro))
+  ) {
+    alertas.push(
+      alerta(
+        'ATENCAO',
+        `O foro eleito (${ctx.foro}) não coincide com a comarca do imóvel (${ctx.imovel.cidade}) nem com o domicílio das partes. Desde a Lei 14.879/2024 a eleição sem pertinência pode ser declarada abusiva de ofício (CPC, art. 63, § 5º).`,
+        'FORO',
       ),
     );
   }
@@ -246,6 +306,16 @@ export function avaliarRiscos(ctx: ContextoMinuta): AlertaMinuta[] {
         'ATENCAO',
         'Sem vistoria de entrada, cobrar danos na saída fica praticamente inviável.',
         'VISTORIA_ENTRADA',
+      ),
+    );
+  }
+
+  if (ctx.respostas.comunicacoesEletronicas) {
+    alertas.push(
+      alerta(
+        'INFO',
+        'Notificação por e-mail ou WhatsApp só vale se houver prova do recebimento. O TJGO já negou liminar de despejo por falta dessa comprovação: guarde o comprovante de entrega ou use aviso de recebimento nas notificações premonitórias.',
+        'COMUNICACOES_ELETRONICAS',
       ),
     );
   }

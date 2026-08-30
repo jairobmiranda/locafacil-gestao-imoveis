@@ -25,39 +25,66 @@ const semAsPropria = (id: string): string[] => OUTRAS_GARANTIAS.filter((item) =>
 export const CLAUSULAS_GARANTIA: Clausula[] = [
   {
     id: 'GARANTIA_CAUCAO',
-    versao: 1,
+    versao: 2,
     titulo: 'Da garantia locatícia: caução em dinheiro',
     grupo: 'GARANTIA',
     nivelProtecao: 2,
-    baseLegal: 'Lei 8.245/91, arts. 37, I, 38 e 39',
+    baseLegal: 'Lei 8.245/91, arts. 37, I e parágrafo único, 38 e 39',
     incompativelCom: semAsPropria('GARANTIA_CAUCAO'),
     condicao: (ctx) => ctx.tipoGarantia === 'CAUCAO',
-    caput: (ctx) =>
-      `Em garantia das obrigações assumidas neste contrato, ${oLocatario(ctx)} ${verbo(ctx.locatarios, 'deposita', 'depositam')} a quantia de ${moeda(ctx.valorGarantia ?? 0)} (${moedaPorExtenso(ctx.valorGarantia ?? 0)}), a título de caução em dinheiro, correspondente a ${((ctx.valorGarantia ?? 0) / ctx.valorAluguel).toFixed(1).replace('.', ',')} aluguéis mensais.`,
+    caput: (ctx) => {
+      const valor = ctx.valorGarantia ?? 0;
+      const proporcao =
+        ctx.valorAluguel > 0 ? (valor / ctx.valorAluguel).toFixed(1).replace('.', ',') : null;
+
+      return `Em garantia das obrigações assumidas neste contrato, ${oLocatario(ctx)} ${verbo(ctx.locatarios, 'deposita', 'depositam')} a quantia de ${moeda(valor)} (${moedaPorExtenso(valor)}), a título de caução em dinheiro${proporcao ? `, correspondente a ${proporcao} aluguéis mensais` : ''}, observado o limite de 3 (três) aluguéis previsto no artigo 38, § 2º, da Lei 8.245/91.`;
+    },
     paragrafos: (ctx) => [
-      `A caução será depositada em caderneta de poupança e reverterá em favor ${doLocatario(ctx)} ao final da locação, com os rendimentos do período, na forma do artigo 38, §2º, da Lei 8.245/91.`,
-      `A restituição ocorrerá em até 30 (trinta) dias contados da devolução das chaves e da aprovação do termo de vistoria de saída, autorizada a compensação de aluguéis, encargos, multas, contas de consumo e do custo dos reparos de responsabilidade ${doLocatario(ctx)}.`,
+      `A caução será depositada em caderneta de poupança e reverterá em favor ${doLocatario(ctx)} ao final da locação, com os rendimentos do período, na forma do artigo 38, § 2º, da Lei 8.245/91.`,
+      `A restituição ocorrerá em até 30 (trinta) dias contados da devolução das chaves e da conclusão do termo de vistoria de saída, autorizada a compensação de aluguéis, encargos, multas, contas de consumo e do custo dos reparos de responsabilidade ${doLocatario(ctx)}, desde que discriminados por escrito e acompanhados dos respectivos orçamentos ou comprovantes.`,
       `A caução não substitui o pagamento pontual dos aluguéis e encargos, sendo vedado ${aoLocatario(ctx)} pretender imputá-la a débitos no curso da locação.`,
-      `A garantia estende-se até a efetiva devolução do IMÓVEL, ainda que prorrogada a locação por prazo indeterminado, nos termos do artigo 39 da Lei 8.245/91.`,
+      `A garantia estende-se até a efetiva devolução do IMÓVEL, ainda que prorrogada a locação por prazo indeterminado, nos termos do artigo 39 da Lei 8.245/91, e é a única modalidade de garantia pactuada, sendo vedada a cumulação com qualquer outra, sob pena de nulidade (artigo 37, parágrafo único, da mesma lei).`,
     ],
   },
   {
     id: 'GARANTIA_FIADOR',
-    versao: 1,
+    versao: 2,
     titulo: 'Da garantia locatícia: fiança',
     grupo: 'GARANTIA',
     nivelProtecao: 3,
-    baseLegal: 'Lei 8.245/91, arts. 37, II, 39 e 40; CC, arts. 818 e 828',
+    baseLegal:
+      'Lei 8.245/91, arts. 37, II e parágrafo único, 39 e 40; CC, arts. 818, 819, 827, 828 e 836; Lei 8.009/90, art. 3º, VII; Súmulas 214, 549 e 656 do STJ',
     incompativelCom: semAsPropria('GARANTIA_FIADOR'),
     condicao: (ctx) => ctx.tipoGarantia === 'FIADOR',
-    caput: (ctx) =>
-      `${ctx.fiadores.length > 1 ? 'Os FIADORES' : 'O FIADOR'} qualificado${ctx.fiadores.length > 1 ? 's' : ''} no preâmbulo ${verbo(ctx.fiadores, 'assume', 'assumem')} a condição de fiador${ctx.fiadores.length > 1 ? 'es' : ''} e principal pagador${ctx.fiadores.length > 1 ? 'es' : ''}, solidariamente responsável${ctx.fiadores.length > 1 ? 'is' : ''} com ${oLocatario(ctx)} por todas as obrigações deste contrato, com expressa renúncia ao benefício de ordem previsto nos artigos 827 e 828 do Código Civil.`,
-    paragrafos: (ctx) => [
-      `A fiança abrange aluguéis, encargos, multas, juros, correção monetária, tributos, contas de consumo, custos de reparação do IMÓVEL, custas processuais e honorários advocatícios, e vigora até a efetiva devolução das chaves, ainda que a locação se prorrogue por prazo indeterminado, nos termos do artigo 39 da Lei 8.245/91.`,
-      `Os fiadores declaram ciência de que o bem de família de propriedade do fiador de locação é passível de penhora, conforme o artigo 3º, VII, da Lei 8.009/90 e a Súmula 549 do Superior Tribunal de Justiça.`,
-      `Ocorrendo morte, insolvência, falência, recuperação judicial, exoneração, alienação de todos os bens imóveis ou mudança de domicílio do fiador, ${oLocatario(ctx)} deverá indicar novo fiador idôneo em até 30 (trinta) dias, sob pena de rescisão e despejo, na forma dos artigos 40 e 63 da Lei 8.245/91.`,
-      `${ctx.fiadores.some((fiador) => fiador.casado) ? 'A fiança é prestada com a expressa anuência do cônjuge do fiador, que comparece a este instrumento na qualidade de anuente, atendendo ao artigo 1.647, III, do Código Civil e à Súmula 332 do Superior Tribunal de Justiça.' : 'O fiador declara não ser casado nem conviver em união estável, respondendo pela veracidade da declaração.'}`,
-    ],
+    caput: (ctx) => {
+      const varios = ctx.fiadores.length > 1;
+
+      return `${varios ? 'Os FIADORES' : 'O FIADOR'} qualificado${varios ? 's' : ''} no preâmbulo ${verbo(ctx.fiadores, 'assume', 'assumem')} a condição de fiador${varios ? 'es' : ''} e principal pagador${varios ? 'es' : ''}, solidariamente responsáve${varios ? 'is' : 'l'} com ${oLocatario(ctx)} por todas as obrigações deste contrato, com expressa renúncia ao benefício de ordem previsto nos artigos 827 e 828 do Código Civil.`;
+    },
+    paragrafos: (ctx) => {
+      const varios = ctx.fiadores.length > 1;
+      const itens: string[] = [
+        `A fiança abrange aluguéis, encargos, multas, juros, correção monetária, tributos, contas de consumo, custos de reparação do IMÓVEL, custas processuais e honorários advocatícios, e, por expressa disposição desta cláusula, prorroga-se automaticamente e vigora até a efetiva devolução das chaves, ainda que a locação se prorrogue por prazo indeterminado, nos termos do artigo 39 da Lei 8.245/91 e da Súmula 656 do Superior Tribunal de Justiça.`,
+        `A fiança não admite interpretação extensiva (Código Civil, artigo 819). Qualquer aditivo, novação, prorrogação por prazo determinado ou alteração do valor do aluguel que não decorra do reajuste aqui pactuado somente vinculará ${varios ? 'os FIADORES' : 'o FIADOR'} se por ${varios ? 'eles' : 'ele'} expressamente subscrito, na forma da Súmula 214 do Superior Tribunal de Justiça.`,
+        `${varios ? 'Os FIADORES declaram' : 'O FIADOR declara'} ciência de que o bem de família de propriedade do fiador de locação é passível de penhora, conforme o artigo 3º, VII, da Lei 8.009/90, a Súmula 549 do Superior Tribunal de Justiça e o Tema 1.127 de repercussão geral do Supremo Tribunal Federal, que estendeu a penhorabilidade também à fiança prestada em locação não residencial.`,
+        `Prorrogada a locação por prazo indeterminado, ${varios ? 'os FIADORES poderão' : 'o FIADOR poderá'} exonerar-se da obrigação mediante notificação resilitória ${aoLocador(ctx)}, ficando responsáve${varios ? 'is' : 'l'} por todos os efeitos da fiança durante 120 (cento e vinte) dias após a notificação, na forma do artigo 40, X e parágrafo único, da Lei 8.245/91, direito que não pode ser suprimido por este contrato.`,
+        `Ocorrendo morte, insolvência, falência, recuperação judicial, exoneração, alienação de todos os bens imóveis ou mudança de domicílio do fiador, ${oLocatario(ctx)} deverá indicar novo fiador idôneo ou garantia substitutiva em até 30 (trinta) dias contados da notificação, sob pena de rescisão e despejo, na forma dos artigos 40 e 63 da Lei 8.245/91. As partes registram que, falecendo o fiador, o espólio e os herdeiros respondem apenas pelas dívidas vencidas até a data do óbito, até os limites da herança, na forma do artigo 836 do Código Civil.`,
+      ];
+
+      const casados = ctx.fiadores.filter((fiador) => fiador.casado);
+
+      if (casados.length > 0) {
+        itens.push(
+          `A fiança é prestada com a expressa anuência do cônjuge de ${lista(casados.map((fiador) => fiador.nome))}, que comparece a este instrumento na qualidade de anuente e o subscreve, atendendo ao artigo 1.647, III, do Código Civil e à Súmula 332 do Superior Tribunal de Justiça, segundo a qual a fiança prestada sem a outorga do cônjuge é integralmente ineficaz.`,
+        );
+      } else {
+        itens.push(
+          `${varios ? 'Os FIADORES declaram' : 'O FIADOR declara'} não ser casado${varios ? 's' : ''} nem conviver em união estável, respondendo pela veracidade da declaração e por eventual ineficácia da fiança a que der causa.`,
+        );
+      }
+
+      return itens;
+    },
   },
   {
     id: 'GARANTIA_SEGURO_FIANCA',
@@ -93,7 +120,7 @@ export const CLAUSULAS_GARANTIA: Clausula[] = [
   },
   {
     id: 'SEM_GARANTIA',
-    versao: 1,
+    versao: 2,
     titulo: 'Da ausência de garantia',
     grupo: 'GARANTIA',
     nivelProtecao: 0,
@@ -101,25 +128,30 @@ export const CLAUSULAS_GARANTIA: Clausula[] = [
     incompativelCom: semAsPropria('SEM_GARANTIA'),
     condicao: (ctx) => ctx.tipoGarantia === 'NENHUMA',
     caput: (ctx) =>
-      `A presente locação é celebrada sem garantia, hipótese em que ${oLocador(ctx)} fica autorizado a exigir o pagamento do aluguel e dos encargos até o sexto dia útil do mês vincendo, nos termos do artigo 42 da Lei 8.245/91.`,
+      `A presente locação é celebrada sem qualquer das garantias do artigo 37 da Lei 8.245/91, razão pela qual o aluguel e os encargos são pagos antecipadamente, na data ajustada na cláusula do aluguel, observado o limite do sexto dia útil do mês vincendo previsto no artigo 42 da mesma lei.`,
+    paragrafos: (ctx) => [
+      `A exigência de garantia em momento posterior depende de aditivo escrito, ficando ${oLocador(ctx)} ciente de que, sem garantia, a mora autoriza desde logo a ação de despejo por falta de pagamento, inclusive com pedido liminar de desocupação, na forma do artigo 59, § 1º, IX, da Lei 8.245/91.`,
+      `Para a liminar prevista no parágrafo anterior, a lei exige caução equivalente a 3 (três) meses de aluguel, admitindo-se, conforme o caso, que o próprio crédito locatício já vencido seja aceito como caução quando superar esse valor. A mora no pagamento do aluguel é automática, nos termos do artigo 397 do Código Civil, dispensada notificação prévia para caracterizá-la.`,
+    ],
   },
 ];
 
 export const CLAUSULAS_SOLIDARIEDADE: Clausula[] = [
   {
     id: 'SOLIDARIEDADE_LOCATARIOS',
-    versao: 1,
+    versao: 2,
     titulo: 'Da solidariedade entre os locatários',
     grupo: 'SOLIDARIEDADE',
     nivelProtecao: 3,
-    baseLegal: 'Lei 8.245/91, art. 2º; CC, arts. 264, 265 e 275',
+    baseLegal: 'Lei 8.245/91, arts. 2º e 12; CC, arts. 264, 265 e 275',
     condicao: (ctx) => ctx.locatarios.length > 1 && ctx.respostas.clausulaSolidariedade,
     caput: (ctx) =>
       `Os LOCATÁRIOS respondem solidariamente por todas as obrigações decorrentes deste contrato, na forma do artigo 2º da Lei 8.245/91 e dos artigos 264 e seguintes do Código Civil, podendo ${oLocador(ctx)} exigir de qualquer deles, isolada ou conjuntamente, o cumprimento integral da dívida.`,
     paragrafos: (ctx) => [
       `A notificação, interpelação ou citação dirigida a qualquer dos LOCATÁRIOS produz efeitos em relação a todos, e o pagamento efetuado por um aproveita aos demais somente até o montante efetivamente pago.`,
       `A saída de qualquer dos LOCATÁRIOS do IMÓVEL não o exonera das obrigações contratuais, salvo mediante aditivo escrito com a expressa concordância ${doLocador(ctx)} e apresentação de garantia substitutiva.`,
-      `Na hipótese de separação de fato, separação judicial, divórcio ou dissolução de união estável, a locação prosseguirá automaticamente com o LOCATÁRIO que permanecer no IMÓVEL, nos termos do artigo 12 da Lei 8.245/91, obrigando-se as partes a comunicar o fato ${aoLocador(ctx)} por escrito no prazo de 30 (trinta) dias.`,
+      `Na hipótese de separação de fato, separação judicial, divórcio ou dissolução de união estável, a locação prosseguirá automaticamente com o LOCATÁRIO que permanecer no IMÓVEL, nos termos do artigo 12 da Lei 8.245/91, obrigando-se as partes a comunicar o fato por escrito ${aoLocador(ctx)} e ao fiador no prazo de 30 (trinta) dias, com a indicação de nova garantia no mesmo prazo.`,
+      `Recebida a comunicação prevista no parágrafo anterior, o fiador poderá exonerar-se de suas obrigações no prazo de 30 (trinta) dias contados do recebimento, ficando responsável pelos efeitos da fiança durante 120 (cento e vinte) dias após a notificação ${aoLocador(ctx)}, na forma do artigo 12, §§ 1º e 2º, da Lei 8.245/91.`,
     ],
   },
   {

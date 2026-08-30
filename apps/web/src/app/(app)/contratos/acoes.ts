@@ -75,6 +75,7 @@ export async function criarContrato(
     diasAntecedenciaGeracao: numero(dados.get('diasAntecedenciaGeracao'), 10),
     gerarCobrancas: dados.get('gerarCobrancas') === 'on',
     observacoes: texto(dados.get('observacoes')),
+    emailsCopia: texto(dados.get('emailsCopia')) ?? null,
     itens: extrairItens(dados),
     partes,
   };

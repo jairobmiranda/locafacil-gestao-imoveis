@@ -39,6 +39,21 @@ const contratoBaseSchema = z.object({
   diasAvisoEncerramento: z.number().int().min(0).max(365).default(90),
   gerarCobrancas: z.boolean().default(true),
   diasAntecedenciaGeracao: z.number().int().min(0).max(60).default(10),
+  /** Copias das cobrancas, um ou mais enderecos separados por ponto e virgula. */
+  emailsCopia: z
+    .string()
+    .max(500)
+    .nullish()
+    .refine(
+      (valor) =>
+        !valor ||
+        valor
+          .split(/[;,]/)
+          .map((item) => item.trim())
+          .filter(Boolean)
+          .every((item) => z.string().email().safeParse(item).success),
+      'Informe endereços válidos separados por ponto e vírgula',
+    ),
   observacoes: z.string().optional(),
   itens: z.array(itemContratoSchema).default([]),
   partes: z.array(parteContratoSchema).min(1),

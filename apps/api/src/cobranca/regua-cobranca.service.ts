@@ -25,6 +25,16 @@ const INCLUI_COBRANCA = {
   },
 } satisfies Prisma.LancamentoInclude;
 
+/** Guardado separado por virgula porque e assim que o envio le o campo. */
+function copiasDoContrato(emailsCopia: string | null | undefined): string | undefined {
+  const enderecos = (emailsCopia ?? '')
+    .split(/[;,]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  return enderecos.length ? enderecos.join(',') : undefined;
+}
+
 @Injectable()
 export class ReguaCobrancaService {
   private readonly logger = new Logger(ReguaCobrancaService.name);
@@ -153,6 +163,7 @@ export class ReguaCobrancaService {
           modeloEmailId: regra.modeloEmailId,
           ocorrencia,
           destinatario: contato.email as string,
+          copia: copiasDoContrato(cobranca.contrato?.emailsCopia),
           assunto: assunto.slice(0, 200),
           corpoRenderizado: corpoHtml,
           agendadoPara,
@@ -223,6 +234,7 @@ export class ReguaCobrancaService {
         modeloEmailId: modelo.id,
         ocorrencia: anteriores + 1,
         destinatario,
+        copia: copiasDoContrato(cobranca.contrato?.emailsCopia),
         assunto: renderizar(modelo.assunto, variaveis).slice(0, 200),
         corpoRenderizado: renderizar(modelo.corpoHtml, variaveis),
         agendadoPara: agora,

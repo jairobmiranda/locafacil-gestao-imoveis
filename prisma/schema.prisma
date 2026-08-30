@@ -362,6 +362,9 @@ model Contrato {
   gerarCobrancas          Boolean @default(true) @map("gerar_cobrancas")
   diasAntecedenciaGeracao Int     @default(10) @map("dias_antecedencia_geracao")
 
+  /// Copias das cobrancas, separadas por ponto e virgula. Ex.: conjuge do inquilino.
+  emailsCopia String? @map("emails_copia") @db.VarChar(500)
+
   observacoes String? @db.Text
 
   criadoEm     DateTime @default(now()) @map("criado_em")

@@ -22,6 +22,7 @@ type ContratoDetalhe = {
   gerarCobrancas: boolean;
   diasAntecedenciaGeracao: number;
   observacoes: string | null;
+  emailsCopia: string | null;
   imovel: { id: string; apelido: string };
   chavePix: { id: string; tipoChave: string; chave: string } | null;
   itens: { id: string; descricao: string; valor: number; categoria: { nome: string } }[];
@@ -111,6 +112,11 @@ export default async function PaginaContrato({ params }: { params: Promise<{ id:
             </tbody>
           </table>
         </div>
+
+        <p className="texto-suave">
+          Cópias das cobranças:{' '}
+          {contrato.emailsCopia ? contrato.emailsCopia : 'nenhuma configurada'}
+        </p>
       </section>
 
       {contrato.itens.length > 0 ? (

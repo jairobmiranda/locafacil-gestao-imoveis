@@ -88,6 +88,15 @@ export function FormularioContrato({
               ))}
             </select>
           </label>
+
+          <label className={erros.emailsCopia ? 'campo com-erro' : 'campo'}>
+            Cópias das cobranças (opcional)
+            <input name="emailsCopia" placeholder="conjuge@exemplo.com; contador@exemplo.com" />
+            <small className="texto-suave">Separe por ponto e vírgula</small>
+            {erros.emailsCopia ? (
+              <span className="mensagem-campo">{erros.emailsCopia}</span>
+            ) : null}
+          </label>
         </div>
       </fieldset>
 

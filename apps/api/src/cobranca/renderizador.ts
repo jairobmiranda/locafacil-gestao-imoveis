@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client';
+import { escaparHtml } from '../comum/html';
 import { gerarTokenPublico } from '../comum/link-assinado';
 import { calcularEncargos } from '../lancamentos/encargos';
 
@@ -17,16 +18,6 @@ function linkPagamento(lancamentoId: string): string {
   const base = (process.env.APP_URL ?? '').replace(/\/$/, '');
 
   return `${base}/pagamento/${gerarTokenPublico('pagamento', lancamentoId)}`;
-}
-
-/** Valores vindos do banco entram em HTML de modelo editavel pelo usuario. */
-function escaparHtml(texto: string): string {
-  return texto
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
 }
 
 /** Nome curto soa seco no tratamento: "Ana" vira "Ana Beatriz". */

@@ -1,0 +1,528 @@
+/* Wizard da minuta e documento renderizado. Mobile-first. */
+
+.wizard {
+  display: grid;
+  gap: var(--e4);
+  grid-template-columns: 1fr;
+  padding-bottom: 96px;
+}
+
+@media (min-width: 1024px) {
+  .wizard {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+    padding-bottom: var(--e5);
+  }
+}
+
+/* ---------- Progresso ---------- */
+
+.wizard-progresso {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: grid;
+  gap: var(--e2);
+  padding: var(--e3) 0;
+  background: var(--fundo);
+}
+
+.wizard-progresso .trilha {
+  height: 6px;
+  border-radius: var(--raio-pill);
+  background: var(--superficie-alt);
+  overflow: hidden;
+}
+
+.wizard-progresso .preenchido {
+  height: 100%;
+  border-radius: var(--raio-pill);
+  background: var(--primaria);
+  transition: width var(--transicao);
+}
+
+.wizard-progresso .rotulo {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--e2);
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+}
+
+/* ---------- Passo ---------- */
+
+.wizard-passo {
+  display: grid;
+  gap: var(--e4);
+}
+
+.wizard-passo h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.wizard-passo .ajuda {
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: 0.92rem;
+}
+
+.campo-grupo {
+  display: grid;
+  gap: var(--e3);
+}
+
+/* ---------- Cartao de opcao ---------- */
+
+.opcao {
+  display: flex;
+  gap: var(--e3);
+  align-items: flex-start;
+  padding: var(--e4);
+  min-height: 56px;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  background: var(--superficie);
+  cursor: pointer;
+  transition: border-color var(--transicao), background var(--transicao);
+}
+
+.opcao:has(input:checked) {
+  border-color: var(--primaria);
+  background: var(--primaria-suave);
+}
+
+.opcao:has(input:focus-visible) {
+  outline: 3px solid var(--anel-foco);
+  outline-offset: 2px;
+}
+
+.opcao input {
+  margin-top: 3px;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  accent-color: var(--primaria);
+}
+
+.opcao .texto {
+  display: grid;
+  gap: 2px;
+}
+
+.opcao .titulo {
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.opcao .explicacao {
+  font-size: 0.86rem;
+  color: var(--texto-suave);
+  line-height: 1.4;
+}
+
+/* ---------- Medidor de protecao ---------- */
+
+.medidor {
+  display: grid;
+  gap: var(--e2);
+  padding: var(--e4);
+  border-radius: var(--raio);
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+}
+
+.medidor .barra {
+  height: 10px;
+  border-radius: var(--raio-pill);
+  background: var(--superficie-alt);
+  overflow: hidden;
+}
+
+.medidor .nivel {
+  height: 100%;
+  border-radius: var(--raio-pill);
+  transition: width var(--transicao), background var(--transicao);
+}
+
+.medidor .nivel[data-faixa='fraco'] {
+  background: var(--negativo);
+}
+.medidor .nivel[data-faixa='equilibrado'] {
+  background: var(--alerta);
+}
+.medidor .nivel[data-faixa='robusto'] {
+  background: var(--positivo);
+}
+
+.medidor .topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--e2);
+}
+
+/* ---------- Alertas ---------- */
+
+.alerta-lista {
+  display: grid;
+  gap: var(--e2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.alerta-item {
+  display: grid;
+  gap: 2px;
+  padding: var(--e3);
+  border-radius: var(--raio-sm);
+  border: 1px solid var(--borda);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.alerta-item[data-severidade='BLOQUEIO'] {
+  background: var(--negativo-suave);
+  border-color: var(--negativo-borda);
+  color: var(--negativo);
+}
+
+.alerta-item[data-severidade='ATENCAO'] {
+  background: var(--alerta-suave);
+  border-color: var(--alerta-borda);
+  color: var(--alerta);
+}
+
+.alerta-item[data-severidade='INFO'] {
+  background: var(--primaria-suave);
+  border-color: var(--primaria-borda);
+  color: var(--primaria-texto);
+}
+
+/* ---------- Navegacao inferior ---------- */
+
+.wizard-rodape {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  gap: var(--e2);
+  padding: var(--e3) var(--e4) calc(var(--e3) + env(safe-area-inset-bottom));
+  background: var(--superficie-vidro);
+  backdrop-filter: saturate(180%) blur(12px);
+  border-top: 1px solid var(--borda);
+}
+
+.wizard-rodape .botao {
+  flex: 1;
+  min-height: 48px;
+  justify-content: center;
+}
+
+@media (min-width: 1024px) {
+  .wizard-rodape {
+    position: static;
+    padding: 0;
+    background: none;
+    backdrop-filter: none;
+    border: 0;
+  }
+
+  .wizard-rodape .botao {
+    flex: 0 0 auto;
+    min-width: 140px;
+  }
+}
+
+/* ---------- Preview ---------- */
+
+.preview {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .preview {
+    display: block;
+    position: sticky;
+    top: var(--e4);
+    max-height: calc(100vh - var(--e6));
+    overflow: auto;
+    border: 1px solid var(--borda);
+    border-radius: var(--raio);
+    background: var(--superficie);
+    padding: var(--e5);
+  }
+}
+
+.preview-flutuante {
+  position: fixed;
+  right: var(--e4);
+  bottom: calc(80px + env(safe-area-inset-bottom));
+  z-index: 21;
+  min-height: 48px;
+  border-radius: var(--raio-pill);
+  box-shadow: var(--sombra-2);
+}
+
+@media (min-width: 1024px) {
+  .preview-flutuante {
+    display: none;
+  }
+}
+
+.preview-folha {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  background: var(--superficie);
+}
+
+.preview-folha header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e3);
+  padding: var(--e3) var(--e4);
+  border-bottom: 1px solid var(--borda);
+}
+
+.preview-folha .conteudo {
+  overflow: auto;
+  padding: var(--e4);
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ---------- Documento ---------- */
+
+.contrato {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 11pt;
+  line-height: 1.6;
+  text-align: justify;
+  color: var(--texto);
+  max-width: 100%;
+}
+
+.contrato h1 {
+  font-size: 12.5pt;
+  text-align: center;
+  letter-spacing: 0.02em;
+  margin: 0 0 1.5em;
+  line-height: 1.4;
+}
+
+.contrato p {
+  margin: 0 0 0.85em;
+  text-indent: 0;
+}
+
+.contrato .rotulo-parte {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  font-size: 10pt;
+  margin-bottom: 0.3em;
+}
+
+.contrato .grupo-partes {
+  margin-bottom: 1.1em;
+}
+
+.contrato .resumo {
+  border: 1px solid var(--borda-forte);
+  border-radius: 4px;
+  padding: 0.8em 1em;
+  margin: 1.2em 0 1.8em;
+  break-inside: avoid;
+}
+
+.contrato .rotulo-resumo {
+  font-weight: 700;
+  font-size: 10pt;
+  margin-bottom: 0.4em;
+}
+
+.contrato .resumo ul {
+  margin: 0;
+  padding-left: 1.2em;
+}
+
+.contrato .resumo li {
+  margin-bottom: 0.2em;
+}
+
+.contrato .clausula {
+  break-inside: avoid;
+  page-break-inside: avoid;
+  margin-bottom: 1.1em;
+}
+
+.contrato .paragrafo {
+  margin-left: 1.2em;
+}
+
+.contrato .base-legal {
+  font-size: 8.5pt;
+  color: var(--texto-tenue);
+  font-style: italic;
+  margin-left: 1.2em;
+}
+
+.contrato .assinaturas {
+  break-before: page;
+  page-break-before: always;
+  margin-top: 2em;
+}
+
+.contrato .local-data {
+  margin: 1.5em 0 2.5em;
+}
+
+.contrato .grade-assinaturas {
+  display: grid;
+  gap: 2.2em 2em;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  break-inside: avoid;
+}
+
+.contrato .assinatura {
+  text-align: center;
+  break-inside: avoid;
+}
+
+.contrato .assinatura .linha {
+  display: block;
+  border-top: 1px solid var(--texto);
+  margin-bottom: 0.35em;
+}
+
+.contrato .assinatura .nome {
+  margin: 0;
+  font-weight: 600;
+  font-size: 10pt;
+  text-align: center;
+}
+
+.contrato .assinatura .papel {
+  margin: 0;
+  font-size: 8.5pt;
+  color: var(--texto-suave);
+  text-align: center;
+}
+
+.contrato .rotulo-testemunhas {
+  margin: 2em 0 1em;
+  font-weight: 700;
+  font-size: 10pt;
+}
+
+.preview-embutido,
+.contrato-preview {
+  display: block;
+}
+
+.passos-assinatura {
+  margin: 0;
+  padding-left: 1.2em;
+  display: grid;
+  gap: var(--e2);
+  color: var(--texto-suave);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+/* ---------- Pagina de impressao ---------- */
+
+.folha {
+  max-width: 21cm;
+  margin: 0 auto;
+  padding: var(--e6);
+  background: var(--superficie);
+}
+
+.rodape-documento {
+  display: none;
+}
+
+.barra-impressao {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e3);
+  padding: var(--e3) var(--e4);
+  background: var(--superficie);
+  border-bottom: 1px solid var(--borda);
+}
+
+@page {
+  size: A4;
+  margin: 25mm 20mm;
+}
+
+@media print {
+  :root {
+    color-scheme: light;
+  }
+
+  body {
+    background: #fff;
+    color: #000;
+  }
+
+  .barra-impressao,
+  .cabecalho,
+  .barra-abas,
+  .cabecalho-pagina,
+  .cabecalho-secao,
+  .indicadores,
+  .wizard-rodape,
+  .preview-flutuante,
+  .nao-imprimir {
+    display: none !important;
+  }
+
+  .conteudo,
+  .aplicacao {
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+  }
+
+  .folha {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    background: #fff;
+  }
+
+  .contrato {
+    color: #000;
+  }
+
+  .contrato .base-legal {
+    color: #555;
+  }
+
+  /* Chrome nao suporta as caixas de margem do @page, entao o rodape e fixo. */
+  .rodape-documento {
+    display: block;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    font-family: var(--fonte-mono);
+    font-size: 7.5pt;
+    color: #666;
+    text-align: center;
+    border-top: 0.5pt solid #bbb;
+    padding-top: 2mm;
+  }
+}

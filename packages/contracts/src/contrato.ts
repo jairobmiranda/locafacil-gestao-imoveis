@@ -2,10 +2,30 @@ import { z } from 'zod';
 
 import { paginacaoSchema } from './comum';
 
-export const situacaoContratoSchema = z.enum(['RASCUNHO', 'ATIVO', 'ENCERRADO', 'RESCINDIDO']);
+export const situacaoContratoSchema = z.enum([
+  'RASCUNHO',
+  'EM_ASSINATURA',
+  'ATIVO',
+  'ENCERRADO',
+  'RESCINDIDO',
+]);
+export const finalidadeLocacaoSchema = z.enum(['RESIDENCIAL', 'NAO_RESIDENCIAL', 'TEMPORADA']);
 export const indiceReajusteSchema = z.enum(['IGPM', 'IPCA', 'INCC', 'NENHUM']);
-export const tipoGarantiaSchema = z.enum(['CAUCAO', 'FIADOR', 'SEGURO_FIANCA', 'NENHUMA']);
-export const papelParteSchema = z.enum(['INQUILINO', 'FIADOR', 'CONJUGE']);
+export const tipoGarantiaSchema = z.enum([
+  'CAUCAO',
+  'FIADOR',
+  'SEGURO_FIANCA',
+  'TITULO_CAPITALIZACAO',
+  'NENHUMA',
+]);
+export const papelParteSchema = z.enum([
+  'LOCADOR',
+  'LOCATARIO',
+  'FIADOR',
+  'CONJUGE',
+  'ANUENTE',
+  'TESTEMUNHA',
+]);
 
 export const itemContratoSchema = z.object({
   categoriaId: z.string().uuid(),
@@ -18,11 +38,16 @@ export const parteContratoSchema = z.object({
   pessoaId: z.string().uuid(),
   papel: papelParteSchema,
   contatoPrincipal: z.boolean().default(false),
+  /** Percentual do locador sobre o imovel. Ignorado nos demais papeis. */
+  participacao: z.number().min(0).max(100).optional(),
+  solidario: z.boolean().default(true),
+  ordem: z.number().int().min(0).default(0),
 });
 
 const contratoBaseSchema = z.object({
   imovelId: z.string().uuid(),
   situacao: situacaoContratoSchema.default('RASCUNHO'),
+  finalidade: finalidadeLocacaoSchema.default('RESIDENCIAL'),
   dataInicio: z.coerce.date(),
   dataFim: z.coerce.date(),
   diaVencimento: z.number().int().min(1).max(31),
@@ -62,13 +87,14 @@ const contratoBaseSchema = z.object({
 const periodoValido = (dados: { dataInicio?: Date; dataFim?: Date }) =>
   !dados.dataInicio || !dados.dataFim || dados.dataFim > dados.dataInicio;
 
+/** No maximo um contato principal. Zero e valido enquanto o contrato e rascunho. */
 const umContatoPrincipal = (dados: { partes?: { contatoPrincipal: boolean }[] }) =>
-  !dados.partes || dados.partes.filter((parte) => parte.contatoPrincipal).length === 1;
+  !dados.partes || dados.partes.filter((parte) => parte.contatoPrincipal).length <= 1;
 
 export const criarContratoSchema = contratoBaseSchema
   .refine(periodoValido, { message: 'A data fim deve ser depois da data início', path: ['dataFim'] })
   .refine(umContatoPrincipal, {
-    message: 'Defina exatamente uma parte como contato principal',
+    message: 'Marque no máximo uma parte como contato principal',
     path: ['partes'],
   });
 
@@ -77,7 +103,7 @@ export const atualizarContratoSchema = contratoBaseSchema
   .partial()
   .refine(periodoValido, { message: 'A data fim deve ser depois da data início', path: ['dataFim'] })
   .refine(umContatoPrincipal, {
-    message: 'Defina exatamente uma parte como contato principal',
+    message: 'Marque no máximo uma parte como contato principal',
     path: ['partes'],
   });
 
@@ -99,6 +125,7 @@ export const encerrarContratoSchema = z.object({
 });
 
 export type SituacaoContrato = z.infer<typeof situacaoContratoSchema>;
+export type FinalidadeLocacao = z.infer<typeof finalidadeLocacaoSchema>;
 export type IndiceReajuste = z.infer<typeof indiceReajusteSchema>;
 export type TipoGarantia = z.infer<typeof tipoGarantiaSchema>;
 export type PapelParte = z.infer<typeof papelParteSchema>;

@@ -12,6 +12,7 @@
   "dependencies": {
     "@locafacil/contracts": "*",
     "@next/env": "^15.5.24",
+    "exifr": "^7.1.3",
     "next": "^15.1.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

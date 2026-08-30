@@ -106,6 +106,7 @@ export class AnexosService {
       LANCAMENTO: () => this.prisma.lancamento.count({ where: { id } }),
       CONTRATO: () => this.prisma.contrato.count({ where: { id } }),
       PESSOA: () => this.prisma.pessoa.count({ where: { id } }),
+      VISTORIA: () => this.prisma.vistoria.count({ where: { id } }),
     }[tipo]();
 
     if (!existe) {

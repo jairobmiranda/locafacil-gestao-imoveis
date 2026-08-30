@@ -51,7 +51,7 @@ export async function criarContrato(
   const fiadorId = texto(dados.get('fiadorId'));
 
   const partes = [
-    { pessoaId: inquilinoId, papel: 'INQUILINO' as const, contatoPrincipal: true },
+    { pessoaId: inquilinoId, papel: 'LOCATARIO' as const, contatoPrincipal: true },
     ...(fiadorId
       ? [{ pessoaId: fiadorId, papel: 'FIADOR' as const, contatoPrincipal: false }]
       : []),

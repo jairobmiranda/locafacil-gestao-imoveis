@@ -1,7 +1,14 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
 const COOKIE_SESSAO = 'locafacil_sessao';
-const ROTAS_PUBLICAS = ['/login', '/pagamento', '/sair'];
+const ROTAS_PUBLICAS = [
+  '/login',
+  '/pagamento',
+  '/sair',
+  '/vistoria',
+  '/api/vistoria',
+  '/api/vistoria-foto',
+];
 
 /**
  * Le o `exp` do JWT sem validar a assinatura: serve para descartar cedo um

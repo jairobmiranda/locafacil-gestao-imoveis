@@ -6,6 +6,6 @@ import { ArmazenamentoService } from './armazenamento.service';
 @Module({
   controllers: [AnexosController],
   providers: [AnexosService, ArmazenamentoService],
-  exports: [AnexosService],
+  exports: [AnexosService, ArmazenamentoService],
 })
 export class AnexosModule {}

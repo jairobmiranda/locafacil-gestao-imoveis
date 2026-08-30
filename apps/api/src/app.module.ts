@@ -13,12 +13,14 @@ import { EmailModule } from './email/email.module';
 import { ImoveisModule } from './imoveis/imoveis.module';
 import { ImplantacaoModule } from './implantacao/implantacao.module';
 import { LancamentosModule } from './lancamentos/lancamentos.module';
+import { MinutasModule } from './minutas/minutas.module';
 import { PessoasModule } from './pessoas/pessoas.module';
 import { PixModule } from './pix/pix.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { PublicoModule } from './publico/publico.module';
 import { SaudeController } from './saude/saude.controller';
 import { UsuariosModule } from './usuarios/usuarios.module';
+import { VistoriasModule } from './vistorias/vistorias.module';
 
 @Module({
   imports: [
@@ -34,10 +36,12 @@ import { UsuariosModule } from './usuarios/usuarios.module';
     ImoveisModule,
     ImplantacaoModule,
     LancamentosModule,
+    MinutasModule,
     PessoasModule,
     PixModule,
     PublicoModule,
     UsuariosModule,
+    VistoriasModule,
   ],
   controllers: [SaudeController],
   providers: [

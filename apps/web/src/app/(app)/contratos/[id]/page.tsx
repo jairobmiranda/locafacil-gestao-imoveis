@@ -58,6 +58,13 @@ export default async function PaginaContrato({ params }: { params: Promise<{ id:
         <AcoesContrato id={contrato.id} situacao={contrato.situacao} />
       </div>
 
+      <p className="texto-suave">
+        <Link href={`/contratos/${contrato.id}/minuta`} className="link">
+          Gerar contrato de locação
+        </Link>{' '}
+        com o assistente de cláusulas.
+      </p>
+
       <div className="indicadores">
         <div className="cartao indicador">
           <span className="texto-suave">Situação</span>

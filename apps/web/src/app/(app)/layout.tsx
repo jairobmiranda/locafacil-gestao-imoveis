@@ -11,6 +11,7 @@ import {
   IconeLancamentos,
   IconePessoas,
   IconeVisaoGeral,
+  IconeVistorias,
 } from './icones';
 
 const MENU = [
@@ -23,6 +24,7 @@ const MENU = [
     Icone: IconeLancamentos,
   },
   { href: '/contratos', rotulo: 'Contratos', rotuloCurto: 'Contratos', Icone: IconeContratos },
+  { href: '/vistorias', rotulo: 'Vistorias', rotuloCurto: 'Vistoria', Icone: IconeVistorias },
   { href: '/pessoas', rotulo: 'Pessoas', rotuloCurto: 'Pessoas', Icone: IconePessoas },
   {
     href: '/configuracoes',

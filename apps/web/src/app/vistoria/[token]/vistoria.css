@@ -1,0 +1,243 @@
+/* App publico de vistoria. Feito para celular, uma decisao por vez. */
+
+.vistoria {
+  min-height: 100dvh;
+  padding-bottom: 140px;
+  background: var(--fundo);
+}
+
+.vistoria-topo {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: var(--e3) var(--e4);
+  background: var(--superficie-vidro);
+  backdrop-filter: saturate(180%) blur(12px);
+  border-bottom: 1px solid var(--borda);
+}
+
+.vistoria-topo .trilha {
+  height: 6px;
+  margin-top: var(--e2);
+  border-radius: var(--raio-pill);
+  background: var(--superficie-alt);
+  overflow: hidden;
+}
+
+.vistoria-topo .preenchido {
+  height: 100%;
+  background: var(--primaria);
+  transition: width var(--transicao);
+}
+
+.vistoria-corpo {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: var(--e4);
+  display: grid;
+  gap: var(--e4);
+}
+
+.ambiente-cartao {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e3);
+  width: 100%;
+  min-height: 64px;
+  padding: var(--e4);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  background: var(--superficie);
+  text-align: left;
+  cursor: pointer;
+}
+
+.ambiente-cartao[data-completo='true'] {
+  border-color: var(--positivo-borda);
+  background: var(--positivo-suave);
+}
+
+.ambiente-cartao .rotulo {
+  display: grid;
+  gap: 2px;
+}
+
+.ambiente-cartao .nome {
+  font-weight: 600;
+}
+
+.ambiente-cartao .contagem {
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+}
+
+.item-cartao {
+  display: grid;
+  gap: var(--e3);
+  padding: var(--e4);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  background: var(--superficie);
+}
+
+.item-cartao h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.item-cartao .dica {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--texto-suave);
+  line-height: 1.4;
+}
+
+.estados {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--e2);
+}
+
+.estado-botao {
+  min-height: 48px;
+  border-radius: var(--raio-sm);
+  border: 1px solid var(--borda);
+  background: var(--superficie);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.estado-botao[aria-pressed='true'] {
+  border-color: var(--primaria);
+  background: var(--primaria-suave);
+  color: var(--primaria-texto);
+}
+
+.miniaturas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: var(--e2);
+}
+
+.miniatura {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: var(--raio-sm);
+  overflow: hidden;
+  background: var(--superficie-alt);
+}
+
+.miniatura img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.miniatura[data-enviando='true']::after {
+  content: 'enviando';
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 2px 4px;
+  font-size: 0.65rem;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+}
+
+.botao-camera {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 56px;
+  width: 100%;
+  border-radius: var(--raio);
+  border: 1px dashed var(--primaria-borda);
+  background: var(--primaria-suave);
+  color: var(--primaria-texto);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.botao-camera input {
+  display: none;
+}
+
+.contador-fotos {
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+}
+
+.contador-fotos[data-completo='false'] {
+  color: var(--alerta);
+}
+
+.vistoria-rodape {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  display: grid;
+  gap: var(--e2);
+  padding: var(--e3) var(--e4) calc(var(--e3) + env(safe-area-inset-bottom));
+  background: var(--superficie-vidro);
+  backdrop-filter: saturate(180%) blur(12px);
+  border-top: 1px solid var(--borda);
+}
+
+.vistoria-rodape .linha {
+  display: flex;
+  gap: var(--e2);
+}
+
+.vistoria-rodape .botao {
+  flex: 1;
+  min-height: 48px;
+  justify-content: center;
+}
+
+.fila-aviso {
+  display: grid;
+  gap: var(--e1);
+  padding: var(--e2) var(--e3);
+  border-radius: var(--raio-sm);
+  background: var(--alerta-suave);
+  border: 1px solid var(--alerta-borda);
+  color: var(--alerta);
+  font-size: 0.85rem;
+}
+
+.fila-aviso .barra {
+  height: 4px;
+  border-radius: var(--raio-pill);
+  background: rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.fila-aviso .barra span {
+  display: block;
+  height: 100%;
+  background: var(--alerta);
+  transition: width var(--transicao);
+}
+
+.pendencias {
+  margin: 0;
+  padding-left: 1.2em;
+  font-size: 0.88rem;
+  color: var(--texto-suave);
+  display: grid;
+  gap: var(--e1);
+}
+
+.vistoria-final {
+  display: grid;
+  gap: var(--e4);
+  padding: var(--e6) var(--e4);
+  text-align: center;
+  max-width: 480px;
+  margin: 0 auto;
+}

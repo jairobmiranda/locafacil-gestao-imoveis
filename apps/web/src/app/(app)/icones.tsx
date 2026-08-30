@@ -51,6 +51,15 @@ export function IconeContratos(props: Props) {
   );
 }
 
+export function IconeVistorias(props: Props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M4.75 7.25h3l1.25-2h6l1.25 2h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4.75a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1Z" />
+      <circle cx="12" cy="12.75" r="3.25" />
+    </svg>
+  );
+}
+
 export function IconePessoas(props: Props) {
   return (
     <svg {...base} {...props}>

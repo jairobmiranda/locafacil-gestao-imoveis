@@ -1,0 +1,14 @@
+.miniaturas-admin {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e1);
+  margin-top: var(--e1);
+}
+
+.miniaturas-admin img {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: var(--raio-sm);
+  border: 1px solid var(--borda);
+}

@@ -68,9 +68,16 @@ enum FormaPagamento {
 
 enum SituacaoContrato {
   RASCUNHO
+  EM_ASSINATURA
   ATIVO
   ENCERRADO
   RESCINDIDO
+}
+
+enum FinalidadeLocacao {
+  RESIDENCIAL
+  NAO_RESIDENCIAL
+  TEMPORADA
 }
 
 enum IndiceReajuste {
@@ -84,13 +91,58 @@ enum TipoGarantia {
   CAUCAO
   FIADOR
   SEGURO_FIANCA
+  TITULO_CAPITALIZACAO
   NENHUMA
 }
 
 enum PapelParte {
-  INQUILINO
+  LOCADOR
+  LOCATARIO
   FIADOR
   CONJUGE
+  ANUENTE
+  TESTEMUNHA
+}
+
+enum EstadoCivil {
+  SOLTEIRO
+  CASADO
+  DIVORCIADO
+  VIUVO
+  UNIAO_ESTAVEL
+  SEPARADO
+}
+
+enum SituacaoMinuta {
+  RASCUNHO
+  GERADA
+  ENVIADA_ASSINATURA
+  ASSINADA
+  CANCELADA
+}
+
+enum TipoVistoria {
+  ENTRADA
+  SAIDA
+  PERIODICA
+}
+
+enum SituacaoVistoria {
+  RASCUNHO
+  CONVITE_ENVIADO
+  EM_EXECUCAO
+  ENVIADA
+  APROVADA
+  RECUSADA
+}
+
+enum EstadoItemVistoria {
+  NOVO
+  BOM
+  REGULAR
+  RUIM
+  AUSENTE
+  NAO_APLICAVEL
 }
 
 enum SituacaoNotificacao {
@@ -120,6 +172,7 @@ enum EntidadeAnexo {
   LANCAMENTO
   CONTRATO
   PESSOA
+  VISTORIA
 }
 
 enum EspecieAnexo {
@@ -129,6 +182,9 @@ enum EspecieAnexo {
   FOTO
   ESCRITURA
   LAUDO
+  MINUTA
+  CONTRATO_ASSINADO
+  DOCUMENTO_PESSOAL
   OUTRO
 }
 
@@ -188,6 +244,7 @@ model Imovel {
 
   lancamentos Lancamento[]
   contratos   Contrato[]
+  vistorias   Vistoria[]
 
   @@index([situacao])
   @@index([estrategia])
@@ -205,6 +262,13 @@ model Pessoa {
   telefone       String?   @db.VarChar(20)
   dataNascimento DateTime? @map("data_nascimento") @db.Date
 
+  /// Qualificacao usada no preambulo do contrato.
+  rg             String?      @db.VarChar(20)
+  orgaoExpedidor String?      @map("orgao_expedidor") @db.VarChar(20)
+  nacionalidade  String?      @db.VarChar(40)
+  estadoCivil    EstadoCivil? @map("estado_civil")
+  profissao      String?      @db.VarChar(80)
+
   cep         String? @db.VarChar(9)
   logradouro  String? @db.VarChar(150)
   numero      String? @db.VarChar(20)
@@ -221,6 +285,7 @@ model Pessoa {
 
   lancamentos     Lancamento[]
   partesContrato  ParteContrato[]
+  vistorias       Vistoria[]
 
   @@index([email])
   @@index([nome])
@@ -332,9 +397,10 @@ model ItemLancamento {
 // ---------------------------------------------------------------------------
 
 model Contrato {
-  id       String           @id @default(uuid()) @db.Char(36)
-  imovelId String           @map("imovel_id") @db.Char(36)
-  situacao SituacaoContrato @default(RASCUNHO)
+  id         String            @id @default(uuid()) @db.Char(36)
+  imovelId   String            @map("imovel_id") @db.Char(36)
+  situacao   SituacaoContrato  @default(RASCUNHO)
+  finalidade FinalidadeLocacao @default(RESIDENCIAL)
 
   dataInicio   DateTime  @map("data_inicio") @db.Date
   dataFim      DateTime  @map("data_fim") @db.Date
@@ -365,6 +431,9 @@ model Contrato {
   /// Copias das cobrancas, separadas por ponto e virgula. Ex.: conjuge do inquilino.
   emailsCopia String? @map("emails_copia") @db.VarChar(500)
 
+  /// Escolhas do wizard de blindagem. Define quais clausulas entram na minuta.
+  respostasBlindagem Json? @map("respostas_blindagem")
+
   observacoes String? @db.Text
 
   criadoEm     DateTime @default(now()) @map("criado_em")
@@ -378,6 +447,8 @@ model Contrato {
   partes       ParteContrato[]
   lancamentos  Lancamento[]
   notificacoes Notificacao[]
+  minutas      MinutaContrato[]
+  vistorias    Vistoria[]
 
   @@index([imovelId, situacao])
   @@index([situacao])
@@ -409,12 +480,161 @@ model ParteContrato {
   papel            PapelParte
   contatoPrincipal Boolean    @default(false) @map("contato_principal")
 
+  /// Percentual do locador sobre o imovel. A soma dos locadores deve fechar 100.
+  participacao Decimal? @db.Decimal(5, 2)
+  solidario    Boolean  @default(true)
+  ordem        Int      @default(0)
+
   contrato Contrato @relation(fields: [contratoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   pessoa   Pessoa   @relation(fields: [pessoaId], references: [id], onDelete: Restrict, onUpdate: Cascade)
 
   @@unique([contratoId, pessoaId, papel])
   @@index([pessoaId])
   @@map("partes_contrato")
+}
+
+/// Fotografia do contrato em determinado momento, ja renderizada.
+/// Depois de sair de RASCUNHO nunca e regerada: alteracao cria nova versao.
+model MinutaContrato {
+  id         String         @id @default(uuid()) @db.Char(36)
+  contratoId String         @map("contrato_id") @db.Char(36)
+  versao     Int
+  situacao   SituacaoMinuta @default(GERADA)
+
+  modeloVersao Int  @map("modelo_versao")
+  /// Tudo que foi usado na renderizacao, para auditoria.
+  dadosSnapshot   Json @map("dados_snapshot")
+  /// Array de { id, versao } das clausulas efetivamente incluidas.
+  clausulasUsadas Json @map("clausulas_usadas")
+
+  conteudoHtml String @map("conteudo_html") @db.LongText
+  hashConteudo String @map("hash_conteudo") @db.Char(64)
+
+  nivelProtecao Int   @default(0) @map("nivel_protecao")
+  alertas       Json?
+
+  enviadaEm   DateTime? @map("enviada_em")
+  assinadaEm  DateTime? @map("assinada_em")
+  canceladaEm DateTime? @map("cancelada_em")
+
+  /// PDF assinado devolvido pelo assinador externo.
+  anexoAssinadoId String? @map("anexo_assinado_id") @db.Char(36)
+  hashAssinado    String? @map("hash_assinado") @db.Char(64)
+
+  criadoEm DateTime @default(now()) @map("criado_em")
+
+  contrato Contrato @relation(fields: [contratoId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([contratoId, versao])
+  @@index([situacao])
+  @@map("minutas_contrato")
+}
+
+// ---------------------------------------------------------------------------
+// Bloco 3.1: Vistoria
+// ---------------------------------------------------------------------------
+
+model Vistoria {
+  id         String           @id @default(uuid()) @db.Char(36)
+  imovelId   String           @map("imovel_id") @db.Char(36)
+  contratoId String?          @map("contrato_id") @db.Char(36)
+  tipo       TipoVistoria
+  situacao   SituacaoVistoria @default(RASCUNHO)
+
+  roteiroChave  String @map("roteiro_chave") @db.VarChar(40)
+  roteiroVersao Int    @map("roteiro_versao")
+
+  /// Quem vai executar. Normalmente o proprio locatario.
+  responsavelId    String? @map("responsavel_id") @db.Char(36)
+  conviteEmail     String? @map("convite_email") @db.VarChar(150)
+  conviteEnviadoEm DateTime? @map("convite_enviado_em")
+  conviteExpiraEm  DateTime? @map("convite_expira_em")
+
+  iniciadaEm DateTime? @map("iniciada_em")
+  enviadaEm  DateTime? @map("enviada_em")
+  aprovadaEm DateTime? @map("aprovada_em")
+  recusadaEm DateTime? @map("recusada_em")
+  motivoRecusa String? @map("motivo_recusa") @db.VarChar(500)
+
+  observacoes String? @db.Text
+
+  laudoAnexoId String? @map("laudo_anexo_id") @db.Char(36)
+
+  criadoEm     DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  imovel      Imovel    @relation(fields: [imovelId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  contrato    Contrato? @relation(fields: [contratoId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  responsavel Pessoa?   @relation(fields: [responsavelId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  ambientes VistoriaAmbiente[]
+
+  @@index([imovelId, tipo])
+  @@index([contratoId])
+  @@index([situacao])
+  @@map("vistorias")
+}
+
+model VistoriaAmbiente {
+  id         String  @id @default(uuid()) @db.Char(36)
+  vistoriaId String  @map("vistoria_id") @db.Char(36)
+  chave      String  @db.VarChar(40)
+  nome       String  @db.VarChar(80)
+  ordem      Int
+  concluido  Boolean @default(false)
+
+  vistoria Vistoria       @relation(fields: [vistoriaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  itens    VistoriaItem[]
+
+  @@index([vistoriaId])
+  @@map("vistoria_ambientes")
+}
+
+model VistoriaItem {
+  id          String              @id @default(uuid()) @db.Char(36)
+  ambienteId  String              @map("ambiente_id") @db.Char(36)
+  chave       String              @db.VarChar(40)
+  nome        String              @db.VarChar(100)
+  dica        String?             @db.VarChar(200)
+  ordem       Int
+  minimoFotos Int                 @default(1) @map("minimo_fotos")
+  estado      EstadoItemVistoria?
+  observacao  String?             @db.Text
+
+  ambiente VistoriaAmbiente @relation(fields: [ambienteId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  fotos    VistoriaFoto[]
+
+  @@index([ambienteId])
+  @@map("vistoria_itens")
+}
+
+/// Nao reusa Anexo: a prova depende de EXIF, coordenada, ordem e dimensoes.
+model VistoriaFoto {
+  id           String @id @default(uuid()) @db.Char(36)
+  itemId       String @map("item_id") @db.Char(36)
+  bucket       String @db.VarChar(63)
+  chaveObjeto  String @map("chave_objeto") @db.VarChar(500)
+  tipoConteudo String @map("tipo_conteudo") @db.VarChar(100)
+  tamanhoBytes Int    @map("tamanho_bytes")
+  largura      Int?
+  altura       Int?
+  hashSha256   String @map("hash_sha256") @db.Char(64)
+
+  /// Vem do EXIF do aparelho, pode ser adulterado. Serve de indicio, nao de prova.
+  capturadaEm DateTime? @map("capturada_em")
+  latitude    Decimal?  @db.Decimal(10, 7)
+  longitude   Decimal?  @db.Decimal(10, 7)
+
+  /// Carimbo do servidor. Esta e a data que vale.
+  recebidaEm DateTime @default(now()) @map("recebida_em")
+
+  ordem   Int     @default(0)
+  legenda String? @db.VarChar(200)
+
+  item VistoriaItem @relation(fields: [itemId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([itemId])
+  @@map("vistoria_fotos")
 }
 
 // ---------------------------------------------------------------------------

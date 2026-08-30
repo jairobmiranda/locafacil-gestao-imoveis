@@ -1,6 +1,12 @@
 import { z } from 'zod';
 
-export const entidadeAnexoSchema = z.enum(['IMOVEL', 'LANCAMENTO', 'CONTRATO', 'PESSOA']);
+export const entidadeAnexoSchema = z.enum([
+  'IMOVEL',
+  'LANCAMENTO',
+  'CONTRATO',
+  'PESSOA',
+  'VISTORIA',
+]);
 
 export const especieAnexoSchema = z.enum([
   'COMPROVANTE',
@@ -9,6 +15,9 @@ export const especieAnexoSchema = z.enum([
   'FOTO',
   'ESCRITURA',
   'LAUDO',
+  'MINUTA',
+  'CONTRATO_ASSINADO',
+  'DOCUMENTO_PESSOAL',
   'OUTRO',
 ]);
 

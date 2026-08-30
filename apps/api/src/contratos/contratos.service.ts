@@ -17,7 +17,7 @@ import { apenasData, somarDias, somarMeses } from '../comum/datas';
 import { PrismaService } from '../prisma/prisma.service';
 
 const INCLUI_DETALHE = {
-  imovel: { select: { id: true, apelido: true } },
+  imovel: { select: { id: true, apelido: true, cidade: true, uf: true, tipo: true } },
   itens: { include: { categoria: { select: { id: true, nome: true } } } },
   partes: { include: { pessoa: { select: { id: true, nome: true, email: true } } } },
   chavePix: { select: { id: true, tipoChave: true, chave: true } },

@@ -284,8 +284,11 @@ Template dos encargos recorrentes. A cada mês vira `itens_lancamento`.
 | `id` | uuid | não | PK |
 | `contrato_id` | uuid | não | |
 | `pessoa_id` | uuid | não | |
-| `papel` | enum `PapelParte` | não | `INQUILINO`, `FIADOR`, `CONJUGE` |
+| `papel` | enum `PapelParte` | não | `LOCADOR`, `LOCATARIO`, `FIADOR`, `CONJUGE`, `ANUENTE`, `TESTEMUNHA` |
 | `contato_principal` | boolean | não | Define quem recebe as cobranças |
+| `participacao` | decimal(5,2) | sim | Quota do locador sobre o imóvel. A soma deve fechar 100 |
+| `solidario` | boolean | não | Solidariedade presumida pelo art. 2º da Lei 8.245/91 |
+| `ordem` | int | não | Ordem de apresentação no preâmbulo do contrato |
 
 Único em `(contrato_id, pessoa_id, papel)`.
 
@@ -479,15 +482,22 @@ enum SituacaoLancamento  { PENDENTE PAGO ATRASADO PARCIAL CANCELADO }
 enum OrigemLancamento    { MANUAL CONTRATO_AUTOMATICO }
 enum FormaPagamento      { PIX TED DINHEIRO BOLETO CARTAO }
 
-enum SituacaoContrato    { RASCUNHO ATIVO ENCERRADO RESCINDIDO }
+enum SituacaoContrato    { RASCUNHO EM_ASSINATURA ATIVO ENCERRADO RESCINDIDO }
+enum FinalidadeLocacao   { RESIDENCIAL NAO_RESIDENCIAL TEMPORADA }
 enum IndiceReajuste      { IGPM IPCA INCC NENHUM }
-enum TipoGarantia        { CAUCAO FIADOR SEGURO_FIANCA NENHUMA }
-enum PapelParte          { INQUILINO FIADOR CONJUGE }
+enum TipoGarantia        { CAUCAO FIADOR SEGURO_FIANCA TITULO_CAPITALIZACAO NENHUMA }
+enum PapelParte          { LOCADOR LOCATARIO FIADOR CONJUGE ANUENTE TESTEMUNHA }
+enum EstadoCivil         { SOLTEIRO CASADO DIVORCIADO VIUVO UNIAO_ESTAVEL SEPARADO }
+
+enum SituacaoMinuta      { RASCUNHO GERADA ENVIADA_ASSINATURA ASSINADA CANCELADA }
+enum TipoVistoria        { ENTRADA SAIDA PERIODICA }
+enum SituacaoVistoria    { RASCUNHO CONVITE_ENVIADO EM_EXECUCAO ENVIADA APROVADA RECUSADA }
+enum EstadoItemVistoria  { NOVO BOM REGULAR RUIM AUSENTE NAO_APLICAVEL }
 
 enum SituacaoNotificacao { PENDENTE ENVIADO FALHOU IGNORADO CANCELADO }
 enum TipoChavePix        { CPF CNPJ EMAIL TELEFONE ALEATORIA }
 
-enum EntidadeAnexo       { IMOVEL LANCAMENTO CONTRATO PESSOA }
+enum EntidadeAnexo       { IMOVEL LANCAMENTO CONTRATO PESSOA VISTORIA }
 enum EspecieAnexo        { COMPROVANTE NOTA_FISCAL CONTRATO FOTO ESCRITURA LAUDO OUTRO }
 enum PerfilUsuario       { ADMIN OPERADOR LEITURA }
 ```

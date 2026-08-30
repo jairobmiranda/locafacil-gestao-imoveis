@@ -222,6 +222,22 @@
   justify-content: center;
 }
 
+/* Abaixo de 768px a tab bar do app tambem e fixa: o rodape sobe para nao ficar atras dela. */
+@media (max-width: 768px) {
+  .wizard-rodape {
+    bottom: calc(var(--altura-abas) + env(safe-area-inset-bottom));
+    padding-bottom: var(--e3);
+  }
+
+  .wizard {
+    padding-bottom: calc(var(--altura-abas) + env(safe-area-inset-bottom) + 96px);
+  }
+
+  .preview-flutuante {
+    bottom: calc(var(--altura-abas) + 80px + env(safe-area-inset-bottom));
+  }
+}
+
 @media (min-width: 1024px) {
   .wizard-rodape {
     position: static;
@@ -276,7 +292,7 @@
 .preview-folha {
   position: fixed;
   inset: 0;
-  z-index: 30;
+  z-index: 40;
   display: grid;
   grid-template-rows: auto 1fr;
   background: var(--superficie);

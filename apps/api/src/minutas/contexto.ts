@@ -6,6 +6,7 @@ export type ParteQualificada = {
   qualificacao: string;
   documento: string | null;
   email: string | null;
+  telefone: string | null;
   estadoCivil: string | null;
   casado: boolean;
   participacao: number | null;

@@ -3,6 +3,7 @@ import {
   aoLocatario,
   doLocador,
   doLocatario,
+  lista,
   moeda,
   oLocador,
   oLocatario,
@@ -253,8 +254,18 @@ export const CLAUSULAS_GERAIS: Clausula[] = [
     nivelProtecao: 2,
     condicao: (ctx) => ctx.respostas.comunicacoesEletronicas,
     caput: () =>
-      `As partes elegem o correio eletrônico e as mensagens instantâneas informados neste instrumento como meios válidos e eficazes de comunicação, notificação e interpelação extrajudicial, reputando-se recebidas as mensagens enviadas aos endereços aqui indicados desde que haja confirmação de entrega, de leitura ou de resposta do destinatário.`,
-    paragrafos: () => [
+      `As partes elegem o correio eletrônico e as mensagens instantâneas informados nesta cláusula como meios válidos e eficazes de comunicação, notificação e interpelação extrajudicial, reputando-se recebidas as mensagens enviadas aos endereços aqui indicados desde que haja confirmação de entrega, de leitura ou de resposta do destinatário.`,
+    paragrafos: (ctx) => [
+      `Ficam eleitos os seguintes canais, cuja titularidade e exatidão cada parte declara e assume: ${lista(
+        [...ctx.locadores, ...ctx.locatarios, ...ctx.fiadores].map((parte) => {
+          const canais = [
+            parte.email ? `e-mail ${parte.email}` : null,
+            parte.telefone ? `telefone e WhatsApp ${parte.telefone}` : null,
+          ].filter(Boolean) as string[];
+
+          return `${parte.nome} (${canais.length > 0 ? canais.join(' e ') : 'sem canal eletrônico informado'})`;
+        }),
+      )}.`,
       `A alteração de endereço eletrônico, telefone ou domicílio deverá ser comunicada à outra parte no prazo de 10 (dez) dias, sob pena de se considerarem válidas as comunicações enviadas aos dados constantes deste contrato.`,
       `A notificação premonitória e as demais comunicações das quais dependa a propositura de ação ou a concessão de liminar serão feitas por meio que produza prova do efetivo recebimento, admitidos o aviso de recebimento postal, o cartório de títulos e documentos e o meio eletrônico com confirmação de entrega, sob pena de ineficácia da comunicação.`,
       `Os endereços físicos indicados no preâmbulo são os domicílios das partes para todos os fins, inclusive para a citação e a intimação em eventual processo judicial, que observarão as formas previstas em lei, não sendo supridas pela comunicação eletrônica ajustada nesta cláusula.`,

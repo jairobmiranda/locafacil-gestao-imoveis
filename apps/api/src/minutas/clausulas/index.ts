@@ -311,6 +311,20 @@ export function avaliarRiscos(ctx: ContextoMinuta): AlertaMinuta[] {
   }
 
   if (ctx.respostas.comunicacoesEletronicas) {
+    const semCanal = [...ctx.locadores, ...ctx.locatarios, ...ctx.fiadores].filter(
+      (parte) => !parte.email && !parte.telefone,
+    );
+
+    if (semCanal.length > 0) {
+      alertas.push(
+        alerta(
+          'ATENCAO',
+          `A cláusula de comunicações eletrônicas está ativa, mas não há e-mail nem telefone cadastrado para: ${semCanal.map((parte) => parte.nome).join(', ')}. Sem canal eleito no contrato, a notificação por meio eletrônico não se sustenta.`,
+          'COMUNICACOES_ELETRONICAS',
+        ),
+      );
+    }
+
     alertas.push(
       alerta(
         'INFO',

@@ -91,6 +91,7 @@ function qualificar(parte: PessoaContrato): ParteQualificada {
     pessoa.rg ? `portador(a) do RG nº ${pessoa.rg}${pessoa.orgaoExpedidor ? ` ${pessoa.orgaoExpedidor}` : ''}` : null,
     documento ? `inscrito(a) no ${documento}` : null,
     pessoa.email ? `endereço eletrônico ${pessoa.email}` : null,
+    pessoa.telefone ? `telefone e WhatsApp ${pessoa.telefone}` : null,
     `residente e domiciliado(a) na ${montarEndereco(pessoa)}`,
   ].filter(Boolean) as string[];
 
@@ -99,6 +100,7 @@ function qualificar(parte: PessoaContrato): ParteQualificada {
     qualificacao: `${trechos.join(', ')}.`,
     documento,
     email: pessoa.email,
+    telefone: pessoa.telefone,
     estadoCivil: pessoa.estadoCivil,
     casado: pessoa.estadoCivil === 'CASADO' || pessoa.estadoCivil === 'UNIAO_ESTAVEL',
     participacao: parte.participacao ? Number(parte.participacao) : null,

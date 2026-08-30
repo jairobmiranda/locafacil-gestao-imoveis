@@ -14,13 +14,15 @@ function Botao() {
   );
 }
 
-export function FormularioLogin({ proximo }: { proximo: string }) {
+export function FormularioLogin({ proximo, expirada }: { proximo: string; expirada: boolean }) {
   const [estado, acao] = useActionState<EstadoLogin, FormData>(entrar, {});
 
   return (
     <form action={acao} className="cartao formulario-login">
       <h1>LocaFácil</h1>
       <p className="texto-suave">Gestão de imóveis, contratos e cobrança</p>
+
+      {expirada ? <p className="aviso">Sua sessão expirou. Entre novamente.</p> : null}
 
       <label>
         E-mail

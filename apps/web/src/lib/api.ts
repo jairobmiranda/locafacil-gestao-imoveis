@@ -42,7 +42,9 @@ export async function api<T>(caminho: string, opcoes: Opcoes = {}): Promise<T> {
   });
 
   if (resposta.status === 401) {
-    redirect('/login');
+    // Nao basta ir ao login: o cookie recusado precisa sumir, senao o middleware
+    // devolve o usuario para a area logada e o navegador entra em loop.
+    redirect('/sair');
   }
 
   if (resposta.status === 204) {
@@ -94,7 +96,7 @@ export async function apiUpload<T>(caminho: string, formulario: FormData): Promi
   });
 
   if (resposta.status === 401) {
-    redirect('/login');
+    redirect('/sair');
   }
 
   const corpo = await resposta.json().catch(() => null);

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { apiGet } from '@/lib/api';
 import { formatarMoeda, rotular } from '@/lib/formato';
 import type { Imovel, Paginado } from '@/lib/tipos';
@@ -42,7 +43,10 @@ export default async function PaginaImoveis({
         </Link>
       </div>
 
-      <Filtros estrategias={ESTRATEGIAS} situacoes={SITUACOES} />
+      {/* useSearchParams precisa de fronteira propria, senao suspende a pagina inteira. */}
+      <Suspense fallback={<div className="filtros" />}>
+        <Filtros estrategias={ESTRATEGIAS} situacoes={SITUACOES} />
+      </Suspense>
 
       {dados.itens.length === 0 ? (
         <div className="cartao vazio">

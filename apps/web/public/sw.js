@@ -1,14 +1,9 @@
 // Cache apenas de assets imutaveis e da pagina offline. Nada de resposta com dado privado.
-const VERSAO = 'locafacil-v1';
+const VERSAO = 'locafacil-v2';
 const ESTATICOS = ['/offline.html', '/icone-192.png', '/icone-512.png'];
 
 self.addEventListener('install', (evento) => {
-  evento.waitUntil(
-    caches
-      .open(VERSAO)
-      .then((cache) => cache.addAll(ESTATICOS))
-      .then(() => self.skipWaiting()),
-  );
+  evento.waitUntil(caches.open(VERSAO).then((cache) => cache.addAll(ESTATICOS)));
 });
 
 self.addEventListener('activate', (evento) => {
@@ -17,8 +12,7 @@ self.addEventListener('activate', (evento) => {
       .keys()
       .then((chaves) =>
         Promise.all(chaves.filter((chave) => chave !== VERSAO).map((chave) => caches.delete(chave))),
-      )
-      .then(() => self.clients.claim()),
+      ),
   );
 });
 

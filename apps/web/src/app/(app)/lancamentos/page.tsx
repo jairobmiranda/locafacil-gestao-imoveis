@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { apiGet } from '@/lib/api';
 import { formatarCompetencia, formatarData, formatarMoeda, rotular } from '@/lib/formato';
 import type { Imovel, Lancamento, Paginado } from '@/lib/tipos';
@@ -67,7 +68,10 @@ export default async function PaginaLancamentos({
         </div>
       </div>
 
-      <FiltrosLancamentos imoveis={imoveis.itens.map(({ id, apelido }) => ({ id, apelido }))} />
+      {/* useSearchParams precisa de fronteira propria, senao suspende a pagina inteira. */}
+      <Suspense fallback={<div className="filtros" />}>
+        <FiltrosLancamentos imoveis={imoveis.itens.map(({ id, apelido }) => ({ id, apelido }))} />
+      </Suspense>
 
       {dados.itens.length === 0 ? (
         <div className="cartao vazio">

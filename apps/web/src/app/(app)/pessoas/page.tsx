@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { apiGet } from '@/lib/api';
 import type { Paginado, Pessoa } from '@/lib/tipos';
 import { BuscaPessoas } from './busca-pessoas';
@@ -38,7 +39,10 @@ export default async function PaginaPessoas({
         </Link>
       </div>
 
-      <BuscaPessoas />
+      {/* useSearchParams precisa de fronteira propria, senao suspende a pagina inteira. */}
+      <Suspense fallback={<div className="filtros" />}>
+        <BuscaPessoas />
+      </Suspense>
 
       {dados.itens.length === 0 ? (
         <div className="cartao vazio">

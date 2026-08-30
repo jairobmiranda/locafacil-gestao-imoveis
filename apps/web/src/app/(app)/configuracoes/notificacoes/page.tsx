@@ -16,10 +16,20 @@ type Notificacao = {
 };
 
 export default async function PaginaNotificacoes() {
-  const [notificacoes, configuracao] = await Promise.all([
+  const [notificacoes, pendentes, configuracao] = await Promise.all([
     apiGet<Paginado<Notificacao>>('/cobranca/notificacoes', { limite: 40 }),
+    apiGet<Paginado<Notificacao>>('/cobranca/notificacoes', {
+      situacao: 'PENDENTE',
+      limite: 100,
+    }),
     apiGet<{ envioAtivo: boolean }>('/cobranca/configuracao'),
   ]);
 
-  return <PainelEnvios notificacoes={notificacoes.itens} envioAtivo={configuracao.envioAtivo} />;
+  return (
+    <PainelEnvios
+      notificacoes={notificacoes.itens}
+      pendentes={pendentes.itens}
+      envioAtivo={configuracao.envioAtivo}
+    />
+  );
 }

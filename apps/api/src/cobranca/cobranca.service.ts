@@ -183,6 +183,19 @@ export class CobrancaService {
     return notificacao;
   }
 
+  async cancelarNotificacao(id: string) {
+    const notificacao = await this.buscarNotificacao(id);
+
+    if (notificacao.situacao !== 'PENDENTE' && notificacao.situacao !== 'FALHOU') {
+      throw new ConflictException(`Notificação já está ${notificacao.situacao.toLowerCase()}`);
+    }
+
+    return this.prisma.notificacao.update({
+      where: { id },
+      data: { situacao: 'CANCELADO' },
+    });
+  }
+
   private async garantirModelo(id: string): Promise<void> {
     const existe = await this.prisma.modeloEmail.count({ where: { id } });
 

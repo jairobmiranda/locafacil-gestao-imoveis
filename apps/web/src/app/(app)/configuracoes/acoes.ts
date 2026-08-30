@@ -243,6 +243,11 @@ export async function reenviarNotificacao(id: string): Promise<void> {
   revalidatePath('/configuracoes/notificacoes');
 }
 
+export async function cancelarNotificacao(id: string): Promise<void> {
+  await apiPost(`/cobranca/notificacoes/${id}/cancelar`);
+  revalidatePath('/configuracoes/notificacoes');
+}
+
 // ----- Implantacao -----
 
 export async function salvarWebhooks(

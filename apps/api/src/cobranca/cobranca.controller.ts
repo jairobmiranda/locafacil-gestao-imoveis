@@ -160,6 +160,13 @@ export class CobrancaController {
     return this.envio.reenviar(id);
   }
 
+  @Post('notificacoes/:id/cancelar')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Cancela uma notificação que ainda não saiu' })
+  cancelarNotificacao(@Param('id', ParseUUIDPipe) id: string) {
+    return this.cobranca.cancelarNotificacao(id);
+  }
+
   @Post('agendar')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Executa a régua manualmente e agenda os disparos do dia' })

@@ -2,9 +2,10 @@
 
 import { useActionState, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
-import { formatarData } from '@/lib/formato';
+import { formatarDataHora } from '@/lib/formato';
 import {
   agendarRegua,
+  cancelarNotificacao,
   processarFila,
   reenviarNotificacao,
   testarEmail,
@@ -36,16 +37,22 @@ function BotaoTeste() {
 
 export function PainelEnvios({
   notificacoes,
+  pendentes,
   envioAtivo,
 }: {
   notificacoes: Notificacao[];
+  pendentes: Notificacao[];
   envioAtivo: boolean;
 }) {
   const [estado, acao] = useActionState<EstadoFormulario, FormData>(testarEmail, {});
   const [pendente, iniciar] = useTransition();
   const [erro, setErro] = useState<string>();
 
-  function executar(operacao: () => Promise<void>) {
+  function executar(operacao: () => Promise<void>, confirmacao?: string) {
+    if (confirmacao && !confirm(confirmacao)) {
+      return;
+    }
+
     setErro(undefined);
     iniciar(async () => {
       try {
@@ -116,6 +123,64 @@ export function PainelEnvios({
 
       <section>
         <div className="cabecalho-secao">
+          <h2>Fila pendente</h2>
+          <span className="texto-suave">{pendentes.length} aguardando envio</span>
+        </div>
+
+        {pendentes.length === 0 ? (
+          <div className="cartao vazio">
+            <p>Nada na fila.</p>
+          </div>
+        ) : (
+          <div className="cartao">
+            <table className="tabela">
+              <thead>
+                <tr>
+                  <th>Destinatário</th>
+                  <th>Assunto</th>
+                  <th>Agendado</th>
+                  <th>Tentativas</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {pendentes.map((notificacao) => (
+                  <tr key={notificacao.id}>
+                    <td>{notificacao.destinatario}</td>
+                    <td data-label="Assunto">
+                      {notificacao.assunto}
+                      {notificacao.ocorrencia > 1 ? ` (${notificacao.ocorrencia}ª cobrança)` : ''}
+                      {notificacao.mensagemErro ? (
+                        <small className="texto-suave">{notificacao.mensagemErro}</small>
+                      ) : null}
+                    </td>
+                    <td data-label="Agendado">{formatarDataHora(notificacao.agendadoPara)}</td>
+                    <td data-label="Tentativas">{notificacao.tentativas}</td>
+                    <td className="direita">
+                      <button
+                        type="button"
+                        className="botao botao-texto"
+                        disabled={pendente}
+                        onClick={() =>
+                          executar(
+                            () => cancelarNotificacao(notificacao.id),
+                            'Cancelar esta notificação? Ela não será enviada.',
+                          )
+                        }
+                      >
+                        Cancelar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <section>
+        <div className="cabecalho-secao">
           <h2>Últimos envios</h2>
         </div>
 
@@ -147,8 +212,8 @@ export function PainelEnvios({
                         <small className="texto-suave">{notificacao.mensagemErro}</small>
                       ) : null}
                     </td>
-                    <td data-label="Agendado">{formatarData(notificacao.agendadoPara)}</td>
-                    <td data-label="Enviado">{formatarData(notificacao.enviadoEm)}</td>
+                    <td data-label="Agendado">{formatarDataHora(notificacao.agendadoPara)}</td>
+                    <td data-label="Enviado">{formatarDataHora(notificacao.enviadoEm)}</td>
                     <td data-label="Situação">
                       <span className={`etiqueta situacao-${notificacao.situacao.toLowerCase()}`}>
                         {notificacao.situacao}

@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { apiDelete, apiPatch, apiPost, apiPut, ErroApi } from '@/lib/api';
+import { apiDelete, apiGet, apiPatch, apiPost, apiPut, ErroApi } from '@/lib/api';
 
 export type EstadoFormulario = { erro?: string; sucesso?: string; campos?: Record<string, string> };
 
@@ -283,6 +283,23 @@ export async function processarFila(): Promise<void> {
 export async function reenviarNotificacao(id: string): Promise<void> {
   await apiPost(`/cobranca/notificacoes/${id}/reenviar`);
   revalidatePath('/configuracoes/notificacoes');
+}
+
+export type NotificacaoDetalhe = {
+  id: string;
+  destinatario: string;
+  copia: string | null;
+  assunto: string;
+  corpoRenderizado: string;
+  agendadoPara: string;
+  enviadoEm: string | null;
+  situacao: string;
+  tentativas: number;
+  mensagemErro: string | null;
+};
+
+export async function obterNotificacao(id: string): Promise<NotificacaoDetalhe> {
+  return apiGet<NotificacaoDetalhe>(`/cobranca/notificacoes/${id}`);
 }
 
 export async function cancelarNotificacao(id: string): Promise<void> {

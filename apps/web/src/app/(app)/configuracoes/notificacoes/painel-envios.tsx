@@ -13,6 +13,7 @@ import {
   testarEmail,
   type EstadoFormulario,
 } from '../acoes';
+import { VisualizadorNotificacao } from './visualizador-notificacao';
 
 type Notificacao = {
   id: string;
@@ -71,6 +72,7 @@ export function PainelEnvios({
   );
   const [pendente, iniciar] = useTransition();
   const [erro, setErro] = useState<string>();
+  const [emLeitura, setEmLeitura] = useState<string>();
 
   function executar(operacao: () => Promise<void>, confirmacao?: string) {
     if (confirmacao && !confirm(confirmacao)) {
@@ -228,8 +230,14 @@ export function PainelEnvios({
                   <tr key={notificacao.id}>
                     <td>{notificacao.destinatario}</td>
                     <td data-label="Assunto">
-                      {notificacao.assunto}
-                      {notificacao.ocorrencia > 1 ? ` (${notificacao.ocorrencia}ª cobrança)` : ''}
+                      <button
+                        type="button"
+                        className="link"
+                        onClick={() => setEmLeitura(notificacao.id)}
+                      >
+                        {notificacao.assunto}
+                        {notificacao.ocorrencia > 1 ? ` (${notificacao.ocorrencia}ª cobrança)` : ''}
+                      </button>
                       {notificacao.mensagemErro ? (
                         <small className="texto-suave">{notificacao.mensagemErro}</small>
                       ) : null}
@@ -286,8 +294,14 @@ export function PainelEnvios({
                   <tr key={notificacao.id}>
                     <td>{notificacao.destinatario}</td>
                     <td data-label="Assunto">
-                      {notificacao.assunto}
-                      {notificacao.ocorrencia > 1 ? ` (${notificacao.ocorrencia}ª cobrança)` : ''}
+                      <button
+                        type="button"
+                        className="link"
+                        onClick={() => setEmLeitura(notificacao.id)}
+                      >
+                        {notificacao.assunto}
+                        {notificacao.ocorrencia > 1 ? ` (${notificacao.ocorrencia}ª cobrança)` : ''}
+                      </button>
                       {notificacao.mensagemErro ? (
                         <small className="texto-suave">{notificacao.mensagemErro}</small>
                       ) : null}
@@ -318,6 +332,10 @@ export function PainelEnvios({
           </div>
         )}
       </section>
+
+      {emLeitura ? (
+        <VisualizadorNotificacao id={emLeitura} aoFechar={() => setEmLeitura(undefined)} />
+      ) : null}
     </>
   );
 }

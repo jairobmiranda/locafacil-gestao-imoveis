@@ -215,6 +215,16 @@ a {
   font-weight: 500;
 }
 
+button.link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+
 @media (hover: hover) {
   .link:hover {
     text-decoration: underline;
@@ -989,6 +999,64 @@ input[type='file']::file-selector-button {
   background: var(--alerta-suave);
   border-color: var(--alerta-borda);
   color: var(--alerta);
+}
+
+/* ========== Janela sobreposta ========== */
+
+.sobreposicao {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--e4);
+  background: rgba(16, 19, 26, 0.44);
+  backdrop-filter: blur(2px);
+}
+
+.janela {
+  display: flex;
+  flex-direction: column;
+  width: min(760px, 100%);
+  max-height: min(88vh, 900px);
+  background: var(--superficie);
+  border: var(--hairline) solid var(--borda);
+  border-radius: var(--raio-lg);
+  box-shadow: var(--sombra-3);
+  overflow: hidden;
+}
+
+.janela-cabecalho {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--e3);
+  padding: var(--e4) var(--e5);
+  border-bottom: var(--hairline) solid var(--borda);
+}
+
+.janela-cabecalho h2 {
+  margin: 0;
+  font-size: 17px;
+  letter-spacing: -0.016em;
+}
+
+.janela-corpo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e3);
+  padding: var(--e4) var(--e5) var(--e5);
+  overflow-y: auto;
+}
+
+.previa-email {
+  width: 100%;
+  min-height: 420px;
+  flex: 1;
+  border: var(--hairline) solid var(--borda);
+  border-radius: var(--raio);
+  background: #ffffff;
 }
 
 /* ========== PIX ========== */

@@ -36,6 +36,7 @@ export const respostasBlindagemSchema = z.object({
   seguroIncendioPorLocatario: z.boolean().default(true),
   transferirContasConsumo: z.boolean().default(true),
   prazoTransferenciaConsumoDias: z.number().int().min(1).max(90).default(30),
+  autorizacaoConsultaConsumo: z.boolean().default(true),
 
   // Rescisao e execucao
   /** Multa compensatoria em numero de alugueis, reduzida proporcionalmente (art. 4o). */

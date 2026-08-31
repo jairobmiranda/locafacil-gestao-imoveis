@@ -3,6 +3,7 @@ import {
   aoLocatario,
   dataExtenso,
   doLocador,
+  doLocatario,
   lista,
   moeda,
   numero,
@@ -279,6 +280,23 @@ export const CLAUSULAS_ENCARGOS: Clausula[] = [
       `${oLocatario(ctx)} ${verbo(ctx.locatarios, 'obriga-se', 'obrigam-se')} a transferir para o seu nome, em até ${inteiroPorExtenso(ctx.respostas.prazoTransferenciaConsumoDias)} (${ctx.respostas.prazoTransferenciaConsumoDias}) dias contados do início da locação, as contas de energia elétrica, água, esgoto, gás e demais serviços de consumo do IMÓVEL, mantendo-as adimplentes até a devolução das chaves.`,
     paragrafos: (ctx) => [
       `Na devolução do IMÓVEL, ${oLocatario(ctx)} ${verbo(ctx.locatarios, 'apresentará', 'apresentarão')} os comprovantes de quitação e ${verbo(ctx.locatarios, 'providenciará', 'providenciarão')} a exclusão das ligações em seu nome, respondendo pelos consumos apurados até a data da entrega das chaves, ainda que faturados posteriormente.`,
+    ],
+  },
+  {
+    id: 'AUTORIZACAO_CONSULTA_CONSUMO',
+    versao: 1,
+    titulo: 'Da autorização de consulta às concessionárias',
+    grupo: 'ENCARGOS',
+    nivelProtecao: 2,
+    baseLegal: 'Lei 13.709/2018, arts. 7º, I e V, e 9º',
+    condicao: (ctx) => ctx.respostas.autorizacaoConsultaConsumo,
+    caput: (ctx) =>
+      `${oLocatario(ctx)} ${verbo(ctx.locatarios, 'autoriza', 'autorizam')} expressamente ${oLocador(ctx)}, ou a administradora por ${verbo(ctx.locadores, 'ele', 'eles')} indicada, a consultar junto às concessionárias e prestadoras de energia elétrica, água, esgoto, gás e demais serviços de consumo do IMÓVEL, ainda que as unidades estejam cadastradas em nome ${doLocatario(ctx)}, as informações de titularidade, situação cadastral, faturas emitidas, valores em aberto, datas de vencimento e histórico de pagamento, bem como a receber tais informações diretamente da prestadora.`,
+    paragrafos: (ctx) => [
+      `A autorização é concedida exclusivamente para a finalidade de acompanhar o cumprimento das obrigações assumidas neste contrato, prevenir o corte de fornecimento e a inscrição de débitos vinculados ao IMÓVEL, e viabilizar o envio de lembretes e avisos ${aoLocatario(ctx)}, sendo vedado qualquer outro uso, o compartilhamento com terceiros estranhos à locação e a formação de cadastro para fins comerciais, na forma da Lei 13.709/2018.`,
+      `${oLocatario(ctx)} ${verbo(ctx.locatarios, 'consente', 'consentem')} no recebimento, pelos canais eletrônicos indicados neste contrato, de lembretes de vencimento, avisos de fatura em aberto e comunicações sobre a regularização das contas de consumo, sem que o envio ou a ausência de envio transfira ${aoLocador(ctx)} a responsabilidade pelo pagamento, que permanece integralmente ${doLocatario(ctx)}.`,
+      `A autorização vigora enquanto durar a locação e pelo prazo necessário à apuração dos consumos posteriores à devolução das chaves, podendo ser revogada por escrito a qualquer tempo, hipótese em que ${oLocatario(ctx)} ${verbo(ctx.locatarios, 'passará', 'passarão')} a apresentar mensalmente, até o vencimento do aluguel, os comprovantes de quitação de todas as contas de consumo do IMÓVEL.`,
+      `${oLocatario(ctx)} ${verbo(ctx.locatarios, 'obriga-se', 'obrigam-se')} a praticar os atos que a prestadora exigir para tornar efetiva esta autorização, tais como o cadastro ${doLocador(ctx)} como representante ou o envio de segunda via das faturas, e a não se opor ao fornecimento das informações aqui autorizadas.`,
     ],
   },
 ];

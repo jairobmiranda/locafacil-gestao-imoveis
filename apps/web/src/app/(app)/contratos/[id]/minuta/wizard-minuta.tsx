@@ -42,6 +42,7 @@ const PADRAO: RespostasBlindagem = {
   seguroIncendioPorLocatario: true,
   transferirContasConsumo: true,
   prazoTransferenciaConsumoDias: 30,
+  autorizacaoConsultaConsumo: true,
   multaRescisoriaAlugueis: 3,
   duasTestemunhas: true,
   direitoPreferencia: true,
@@ -64,6 +65,7 @@ type ChaveBooleana =
   | 'condominioPorLocatario'
   | 'seguroIncendioPorLocatario'
   | 'transferirContasConsumo'
+  | 'autorizacaoConsultaConsumo'
   | 'duasTestemunhas'
   | 'direitoPreferencia'
   | 'exigirVistoriaEntrada'
@@ -108,6 +110,7 @@ const PERFIS: Record<PerfilPronto, Partial<RespostasBlindagem>> = {
     condominioPorLocatario: true,
     seguroIncendioPorLocatario: true,
     transferirContasConsumo: true,
+    autorizacaoConsultaConsumo: true,
     multaRescisoriaAlugueis: 3,
     duasTestemunhas: true,
     direitoPreferencia: true,
@@ -175,6 +178,12 @@ const BLINDAGEM: { grupo: string; itens: { chave: ChaveBooleana; titulo: string;
         chave: 'transferirContasConsumo',
         titulo: 'Exigir transferência das contas de consumo',
         explicacao: 'Água, luz e gás no nome dele, com prazo definido e prova na saída.',
+      },
+      {
+        chave: 'autorizacaoConsultaConsumo',
+        titulo: 'Autorização para consultar água e energia',
+        explicacao:
+          'Permite consultar faturas e débitos na concessionária mesmo com a conta no nome do inquilino, e enviar lembretes. Sem ela, a prestadora nega a informação por ser dado de terceiro (LGPD).',
       },
     ],
   },

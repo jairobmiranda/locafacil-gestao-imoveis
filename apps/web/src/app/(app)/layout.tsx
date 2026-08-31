@@ -39,6 +39,27 @@ export default async function LayoutApp({ children }: { children: ReactNode }) {
 
   return (
     <div className="aplicacao">
+      <aside className="lateral">
+        <Link href="/dashboard" className="marca">
+          LocaFácil
+        </Link>
+
+        <nav className="menu menu-lateral" aria-label="Navegação principal">
+          {MENU.map(({ href, rotulo, Icone }) => (
+            <LinkNavegacao key={href} href={href} icone={<Icone />}>
+              {rotulo}
+            </LinkNavegacao>
+          ))}
+        </nav>
+
+        <form action={sair} className="area-usuario">
+          <span className="texto-suave">{usuario.nome}</span>
+          <button type="submit" className="botao botao-texto">
+            Sair
+          </button>
+        </form>
+      </aside>
+
       <header className="cabecalho">
         <Link href="/dashboard" className="marca">
           LocaFácil

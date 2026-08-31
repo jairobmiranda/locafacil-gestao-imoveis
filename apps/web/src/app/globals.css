@@ -64,6 +64,7 @@
   --hairline: 1px;
   --altura-cabecalho: 60px;
   --altura-abas: 60px;
+  --largura-lateral: 236px;
 
   --fonte: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI Variable Text', 'Segoe UI',
     Roboto, Inter, Helvetica, Arial, sans-serif;
@@ -402,6 +403,48 @@ a {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Barra lateral, visível apenas em telas grandes. */
+.lateral {
+  display: none;
+  flex-direction: column;
+  gap: var(--e5);
+  padding: var(--e5) var(--e4);
+  background: var(--superficie-vidro);
+  border-right: var(--hairline) solid var(--borda);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+
+.lateral .marca {
+  padding: 0 var(--e2);
+  font-size: 19px;
+}
+
+.menu-lateral {
+  flex-direction: column;
+  gap: var(--e1);
+  overflow-y: auto;
+}
+
+.menu-lateral .item-menu {
+  display: flex;
+  padding: 9px 12px;
+  border-radius: var(--raio);
+}
+
+.lateral .area-usuario {
+  margin-left: 0;
+  margin-top: auto;
+  padding: var(--e3) var(--e2) 0;
+  border-top: var(--hairline) solid var(--borda);
+}
+
+.lateral .area-usuario .texto-suave {
+  flex: 1;
+  min-width: 0;
+  max-width: none;
 }
 
 /* Tab bar inferior, visível apenas no mobile. */
@@ -1213,6 +1256,31 @@ textarea[name='corpoHtml'] {
   resize: vertical;
   tab-size: 2;
   border-radius: 0 0 var(--raio-lg) var(--raio-lg);
+}
+
+/* ========== Responsivo: desktop ========== */
+
+/* Em telas grandes a navegação sai do cabeçalho e vira barra lateral fixa. */
+@media (min-width: 1025px) {
+  .aplicacao {
+    display: grid;
+    grid-template-columns: var(--largura-lateral) 1fr;
+  }
+
+  .cabecalho {
+    display: none;
+  }
+
+  .lateral {
+    display: flex;
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+  }
+
+  .conteudo {
+    grid-column: 2;
+  }
 }
 
 /* ========== Responsivo: tablet ========== */

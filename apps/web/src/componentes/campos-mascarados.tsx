@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type InputHTMLAttributes } from 'react';
+import { useRef, useState, type InputHTMLAttributes } from 'react';
 import {
   desmascararValor,
   limparDocumento,
@@ -11,6 +11,20 @@ import {
   somenteDigitos,
   valorParaMascara,
 } from '@/lib/mascaras';
+import { buscarCep } from '@/lib/via-cep';
+
+/** Os campos de endereco sao nao controlados: escrever direto no DOM e seguro aqui. */
+function preencher(formulario: HTMLFormElement, campo: string, valor: string) {
+  if (valor.trim() === '') {
+    return;
+  }
+
+  const elemento = formulario.elements.namedItem(campo);
+
+  if (elemento instanceof HTMLInputElement) {
+    elemento.value = valor;
+  }
+}
 
 type PropsBase = Omit<
   InputHTMLAttributes<HTMLInputElement>,
@@ -68,17 +82,70 @@ export function EntradaTelefone(props: Props) {
   );
 }
 
-export function EntradaCep(props: Props) {
+export function EntradaCep({ name, valor, ...resto }: Props) {
+  const [texto, setTexto] = useState(() => mascararCep(String(valor ?? '')));
+  const [situacao, setSituacao] = useState<'ocioso' | 'buscando' | 'nao-encontrado'>('ocioso');
+  const campo = useRef<HTMLInputElement>(null);
+  const ultimoConsultado = useRef('');
+
+  async function consultar(cep: string) {
+    const formulario = campo.current?.form;
+
+    if (!formulario || ultimoConsultado.current === cep) {
+      return;
+    }
+
+    ultimoConsultado.current = cep;
+    setSituacao('buscando');
+
+    const endereco = await buscarCep(cep);
+
+    if (!endereco) {
+      setSituacao('nao-encontrado');
+      return;
+    }
+
+    setSituacao('ocioso');
+    preencher(formulario, 'logradouro', endereco.logradouro);
+    preencher(formulario, 'bairro', endereco.bairro);
+    preencher(formulario, 'cidade', endereco.localidade);
+    preencher(formulario, 'uf', endereco.uf);
+
+    const numero = formulario.elements.namedItem('numero');
+
+    if (numero instanceof HTMLInputElement && numero.value === '') {
+      numero.focus();
+    }
+  }
+
   return (
-    <CampoMascarado
-      inputMode="numeric"
-      placeholder="00.000-000"
-      autoComplete="postal-code"
-      {...props}
-      mascararInicial={(bruto) => mascararCep(String(bruto ?? ''))}
-      mascarar={mascararCep}
-      limpar={(mascarado) => somenteDigitos(mascarado)}
-    />
+    <>
+      <input
+        inputMode="numeric"
+        placeholder="00.000-000"
+        autoComplete="postal-code"
+        {...resto}
+        ref={campo}
+        type="text"
+        value={texto}
+        onChange={(evento) => {
+          const mascarado = mascararCep(evento.target.value);
+          setTexto(mascarado);
+          setSituacao('ocioso');
+
+          const digitos = somenteDigitos(mascarado);
+
+          if (digitos.length === 8) {
+            void consultar(digitos);
+          }
+        }}
+      />
+      <input type="hidden" name={name} value={somenteDigitos(texto)} />
+      {situacao === 'buscando' ? <small className="texto-suave">Buscando endereço...</small> : null}
+      {situacao === 'nao-encontrado' ? (
+        <small className="texto-suave">CEP não encontrado, preencha o endereço à mão</small>
+      ) : null}
+    </>
   );
 }
 

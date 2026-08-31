@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { apiGet } from '@/lib/api';
 import { formatarData, rotular } from '@/lib/formato';
 import type { Paginado } from '@/lib/tipos';
-import { FormularioVistoria } from './formulario-vistoria';
+import { FormularioVistoria, type RoteiroOpcao } from './formulario-vistoria';
 
 type VistoriaLista = {
   id: string;
@@ -13,7 +13,13 @@ type VistoriaLista = {
   imovel: { id: string; apelido: string };
 };
 
-type ImovelOpcao = { id: string; apelido: string };
+type ImovelOpcao = {
+  id: string;
+  apelido: string;
+  tipo: string;
+  quartos: number | null;
+  vagas: number | null;
+};
 type ContratoOpcao = {
   id: string;
   imovelId: string;
@@ -23,10 +29,11 @@ type ContratoOpcao = {
 };
 
 export default async function PaginaVistorias() {
-  const [vistorias, imoveis, contratos] = await Promise.all([
+  const [vistorias, imoveis, contratos, roteiros] = await Promise.all([
     apiGet<VistoriaLista[]>('/vistorias'),
     apiGet<Paginado<ImovelOpcao>>('/imoveis', { limite: 100 }),
     apiGet<Paginado<ContratoOpcao>>('/contratos', { limite: 100 }),
+    apiGet<RoteiroOpcao[]>('/vistorias/roteiros'),
   ]);
 
   return (
@@ -47,6 +54,7 @@ export default async function PaginaVistorias() {
         </div>
         <FormularioVistoria
           imoveis={imoveis.itens}
+          roteiros={roteiros}
           contratos={contratos.itens.map((contrato) => ({
             id: contrato.id,
             imovelId: contrato.imovelId,

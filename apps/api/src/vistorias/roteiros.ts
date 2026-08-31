@@ -174,6 +174,7 @@ export function roteiroPara(tipoImovel: string, chaveDesejada?: string): Roteiro
 export function materializar(
   roteiro: Roteiro,
   imovel: { quartos: number | null; vagas: number | null },
+  selecao?: { chave: string; quantidade: number; rotulos?: string[]; itensOpcionais?: string[] }[],
 ) {
   const ambientes: {
     chave: string;
@@ -182,24 +183,58 @@ export function materializar(
     itens: { chave: string; nome: string; dica: string | null; ordem: number; minimoFotos: number }[];
   }[] = [];
 
+  const escolhaPorChave = new Map(selecao?.map((escolha) => [escolha.chave, escolha]));
+
   for (const modelo of roteiro.ambientes) {
-    const quantidade = modelo.repetirPor ? Math.max(0, imovel[modelo.repetirPor] ?? 0) : 1;
+    // Sem selecao explicita o roteiro se ajusta sozinho pelos quartos e vagas do imovel.
+    const quantidade = selecao
+      ? Math.max(0, escolhaPorChave.get(modelo.chave)?.quantidade ?? 0)
+      : modelo.repetirPor
+        ? Math.max(0, imovel[modelo.repetirPor] ?? 0)
+        : 1;
+
+    const rotulos = escolhaPorChave.get(modelo.chave)?.rotulos ?? [];
+    const opcionais = new Set(escolhaPorChave.get(modelo.chave)?.itensOpcionais ?? []);
 
     for (let indice = 0; indice < quantidade; indice += 1) {
+      const rotulo = rotulos[indice]?.trim();
+
       ambientes.push({
         chave: quantidade > 1 ? `${modelo.chave}_${indice + 1}` : modelo.chave,
-        nome: quantidade > 1 ? `${modelo.nome} ${indice + 1}` : modelo.nome,
+        nome: rotulo || (quantidade > 1 ? `${modelo.nome} ${indice + 1}` : modelo.nome),
         ordem: ambientes.length,
         itens: modelo.itens.map((item, posicao) => ({
           chave: item.chave,
           nome: item.nome,
           dica: item.dica ?? null,
           ordem: posicao,
-          minimoFotos: item.minimoFotos ?? 1,
+          minimoFotos: opcionais.has(item.chave) ? 0 : (item.minimoFotos ?? 1),
         })),
       });
     }
   }
 
   return ambientes;
+}
+
+/** Catalogo para a tela de criacao montar a lista de ambientes. */
+export function roteirosDisponiveis() {
+  return ROTEIROS.map((roteiro) => ({
+    chave: roteiro.chave,
+    nome: roteiro.nome,
+    versao: roteiro.versao,
+    tiposImovel: Object.entries(POR_TIPO_IMOVEL)
+      .filter(([, chave]) => chave === roteiro.chave)
+      .map(([tipo]) => tipo),
+    ambientes: roteiro.ambientes.map((ambiente) => ({
+      chave: ambiente.chave,
+      nome: ambiente.nome,
+      repetirPor: ambiente.repetirPor ?? null,
+      itens: ambiente.itens.map((item) => ({
+        chave: item.chave,
+        nome: item.nome,
+        obrigatorio: (item.minimoFotos ?? 1) > 0,
+      })),
+    })),
+  }));
 }

@@ -20,6 +20,15 @@ export const estadoItemVistoriaSchema = z.enum([
   'NAO_APLICAVEL',
 ]);
 
+/** Ambiente escolhido para a vistoria. `rotulos` nomeia cada copia, ex.: "Suíte", "Quarto da frente". */
+export const ambienteSelecionadoSchema = z.object({
+  chave: z.string().min(1).max(40),
+  quantidade: z.number().int().min(0).max(20),
+  rotulos: z.array(z.string().max(80)).max(20).optional(),
+  /** Itens que aparecem no roteiro mas nao exigem estado nem foto para concluir. */
+  itensOpcionais: z.array(z.string().max(40)).max(60).optional(),
+});
+
 export const criarVistoriaSchema = z.object({
   imovelId: z.string().uuid(),
   contratoId: z.string().uuid().optional(),
@@ -27,6 +36,8 @@ export const criarVistoriaSchema = z.object({
   responsavelId: z.string().uuid().optional(),
   /** Sobrescreve o roteiro deduzido do tipo do imovel. */
   roteiroChave: z.string().max(40).optional(),
+  /** Sem esta lista o roteiro inteiro entra, com os ambientes repetidos pelo cadastro do imovel. */
+  ambientes: z.array(ambienteSelecionadoSchema).max(40).optional(),
   observacoes: z.string().max(2000).optional(),
 });
 
@@ -65,6 +76,7 @@ export type TipoVistoria = z.infer<typeof tipoVistoriaSchema>;
 export type SituacaoVistoria = z.infer<typeof situacaoVistoriaSchema>;
 export type EstadoItemVistoria = z.infer<typeof estadoItemVistoriaSchema>;
 export type CriarVistoriaDto = z.infer<typeof criarVistoriaSchema>;
+export type AmbienteSelecionadoDto = z.infer<typeof ambienteSelecionadoSchema>;
 export type EnviarConviteDto = z.infer<typeof enviarConviteSchema>;
 export type ResponderItemDto = z.infer<typeof responderItemSchema>;
 export type MetadadosFotoDto = z.infer<typeof metadadosFotoSchema>;

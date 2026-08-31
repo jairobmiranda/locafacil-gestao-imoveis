@@ -48,6 +48,12 @@ export class VistoriasController {
     return this.vistorias.listar(filtros);
   }
 
+  @Get('roteiros')
+  @ApiOperation({ summary: 'Lista os roteiros e seus ambientes, para montar a seleção' })
+  roteiros() {
+    return this.vistorias.roteiros();
+  }
+
   @Post()
   @ApiOperation({ summary: 'Cria a vistoria e materializa o roteiro' })
   criar(@Body(new ZodValidationPipe(criarVistoriaSchema)) dados: CriarVistoriaDto) {

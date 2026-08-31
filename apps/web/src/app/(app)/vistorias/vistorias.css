@@ -12,3 +12,47 @@
   border-radius: var(--raio-sm);
   border: 1px solid var(--borda);
 }
+
+.grade-ambientes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--e2);
+}
+
+.ambiente-escolha {
+  display: grid;
+  grid-template-columns: 1fr 72px;
+  align-items: center;
+  gap: var(--e2);
+  padding: var(--e2);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+}
+
+.ambiente-escolha .campo-inline {
+  margin: 0;
+}
+
+.ambiente-escolha .campo-inline small {
+  display: block;
+}
+
+.rotulos-ambiente {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: var(--e1);
+}
+
+.itens-ambiente {
+  grid-column: 1 / -1;
+  font-size: 0.9rem;
+}
+
+.itens-ambiente summary {
+  cursor: pointer;
+  color: var(--texto-suave);
+}
+
+.itens-ambiente .campo-inline {
+  margin: var(--e1) 0 0;
+}

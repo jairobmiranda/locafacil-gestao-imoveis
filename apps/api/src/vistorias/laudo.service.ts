@@ -77,7 +77,7 @@ export class LaudoService {
           .font('Helvetica-Bold')
           .text(`${item.nome}: `, { continued: true })
           .font('Helvetica')
-          .text(item.estado ? (ESTADO_ROTULO[item.estado] ?? item.estado) : 'não informado');
+          .text(item.estado ? (ESTADO_ROTULO[item.estado] ?? item.estado) : 'não avaliado');
 
         if (item.observacao) {
           documento.fontSize(9).fillColor('#444').text(item.observacao).fillColor('#000');

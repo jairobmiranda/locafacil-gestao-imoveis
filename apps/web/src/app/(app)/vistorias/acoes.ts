@@ -15,6 +15,23 @@ function traduzir(erro: unknown): EstadoVistoria {
   throw erro;
 }
 
+/** A selecao de ambientes viaja como JSON num hidden: a lista e dinamica demais para campos soltos. */
+function lerAmbientes(valor: FormDataEntryValue | null) {
+  const conteudo = String(valor ?? '').trim();
+
+  if (conteudo === '') {
+    return undefined;
+  }
+
+  try {
+    const analisado: unknown = JSON.parse(conteudo);
+
+    return Array.isArray(analisado) && analisado.length > 0 ? analisado : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function criarVistoria(
   _anterior: EstadoVistoria,
   dados: FormData,
@@ -23,11 +40,15 @@ export async function criarVistoria(
 
   try {
     const contratoId = String(dados.get('contratoId') ?? '').trim();
+    const roteiroChave = String(dados.get('roteiroChave') ?? '').trim();
+    const ambientes = lerAmbientes(dados.get('ambientes'));
 
     const vistoria = await apiPost<{ id: string }>('/vistorias', {
       imovelId: String(dados.get('imovelId') ?? ''),
       tipo: String(dados.get('tipo') ?? 'ENTRADA'),
       ...(contratoId ? { contratoId } : {}),
+      ...(roteiroChave ? { roteiroChave } : {}),
+      ...(ambientes ? { ambientes } : {}),
     });
 
     destino = `/vistorias/${vistoria.id}`;

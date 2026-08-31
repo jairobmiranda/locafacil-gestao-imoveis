@@ -20,7 +20,11 @@ const ESTADOS: { valor: EstadoItemVistoria; rotulo: string }[] = [
 
 type Tela = { nome: 'ambientes' } | { nome: 'itens'; ambienteId: string } | { nome: 'fim' };
 
+/** Item sem foto minima e opcional: nao exige estado nem foto para concluir. */
+const itemOpcional = (item: VistoriaItemPublico): boolean => item.minimoFotos === 0;
+
 const itemCompleto = (item: VistoriaItemPublico, extras: number): boolean =>
+  itemOpcional(item) ||
   item.estado === 'NAO_APLICAVEL' ||
   (item.estado !== null && item.fotos.length + extras >= item.minimoFotos);
 
@@ -314,11 +318,15 @@ function CartaoItem({
   onCapturar: (arquivos: FileList | null) => void;
 }) {
   const total = item.fotos.length + enviando;
-  const completo = total >= item.minimoFotos;
+  const opcional = itemOpcional(item);
+  const completo = opcional || total >= item.minimoFotos;
 
   return (
     <section className="item-cartao">
-      <h3>{item.nome}</h3>
+      <h3>
+        {item.nome}
+        {opcional ? <span className="etiqueta-opcional">opcional</span> : null}
+      </h3>
       {item.dica ? <p className="dica">{item.dica}</p> : null}
 
       <div className="estados">
@@ -367,7 +375,9 @@ function CartaoItem({
           </label>
 
           <span className="contador-fotos" data-completo={completo}>
-            {total} de {item.minimoFotos} foto(s) necessária(s)
+            {opcional
+              ? `${total} foto(s), envio opcional`
+              : `${total} de ${item.minimoFotos} foto(s) necessária(s)`}
           </span>
         </>
       ) : null}

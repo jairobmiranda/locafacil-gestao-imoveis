@@ -17,7 +17,7 @@ import type {
 import { ArmazenamentoService } from '../anexos/armazenamento.service';
 import { somarDias } from '../comum/datas';
 import { PrismaService } from '../prisma/prisma.service';
-import { materializar, roteiroPara } from './roteiros';
+import { materializar, roteiroPara, roteirosDisponiveis } from './roteiros';
 
 const INCLUI_EXECUCAO = {
   imovel: true,
@@ -80,7 +80,23 @@ export class VistoriasService {
     }
 
     const roteiro = roteiroPara(imovel.tipo, dados.roteiroChave);
-    const ambientes = materializar(roteiro, imovel);
+
+    if (dados.ambientes) {
+      const conhecidas = new Set(roteiro.ambientes.map((ambiente) => ambiente.chave));
+      const desconhecida = dados.ambientes.find((escolha) => !conhecidas.has(escolha.chave));
+
+      if (desconhecida) {
+        throw new BadRequestException(
+          `O ambiente "${desconhecida.chave}" não existe no roteiro ${roteiro.nome}`,
+        );
+      }
+    }
+
+    const ambientes = materializar(roteiro, imovel, dados.ambientes);
+
+    if (ambientes.length === 0) {
+      throw new BadRequestException('Selecione ao menos um ambiente para a vistoria');
+    }
 
     return this.prisma.vistoria.create({
       data: {
@@ -102,6 +118,10 @@ export class VistoriasService {
       },
       include: INCLUI_EXECUCAO,
     });
+  }
+
+  roteiros() {
+    return roteirosDisponiveis();
   }
 
   listar(filtros: ListarVistoriasDto) {
@@ -301,12 +321,13 @@ export class VistoriasService {
     await this.armazenamento.remover(foto.chaveObjeto);
   }
 
-  /** Itens obrigatorios sem a quantidade minima de fotos. */
+  /** Item com `minimoFotos` zero e opcional: nao exige estado nem foto para concluir. */
   pendencias(vistoria: VistoriaCompleta): { ambiente: string; item: string }[] {
     return vistoria.ambientes.flatMap((ambiente) =>
       ambiente.itens
         .filter(
           (item) =>
+            item.minimoFotos > 0 &&
             item.estado !== 'NAO_APLICAVEL' &&
             (item.fotos.length < item.minimoFotos || item.estado === null),
         )

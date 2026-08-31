@@ -114,7 +114,12 @@ export default async function PaginaVistoria({ params }: { params: Promise<{ id:
               <tbody>
                 {ambiente.itens.map((item) => (
                   <tr key={item.id}>
-                    <td>{item.nome}</td>
+                    <td>
+                      {item.nome}
+                      {item.minimoFotos === 0 ? (
+                        <span className="texto-suave"> (opcional)</span>
+                      ) : null}
+                    </td>
                     <td data-label="Estado">
                       {item.estado ? (
                         rotular(item.estado)
@@ -123,7 +128,9 @@ export default async function PaginaVistoria({ params }: { params: Promise<{ id:
                       )}
                     </td>
                     <td data-label="Fotos">
-                      {item.fotos.length} de {item.minimoFotos}
+                      {item.minimoFotos === 0
+                        ? `${item.fotos.length} (opcional)`
+                        : `${item.fotos.length} de ${item.minimoFotos}`}
                       <div className="miniaturas-admin">
                         {item.fotos.map((foto) => (
                           /* eslint-disable-next-line @next/next/no-img-element */

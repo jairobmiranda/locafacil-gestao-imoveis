@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { paginacaoSchema } from './comum';
+import { cepSchema, paginacaoSchema } from './comum';
 
 export const estrategiaSchema = z.enum(['REVENDA', 'LOCACAO', 'TERRENO', 'USO_PROPRIO']);
 
@@ -21,7 +21,7 @@ export const criarImovelSchema = z.object({
   estrategia: estrategiaSchema,
   situacao: situacaoImovelSchema.default('PROSPECCAO'),
   tipo: tipoImovelSchema,
-  cep: z.string().max(9).optional(),
+  cep: cepSchema.optional(),
   logradouro: z.string().max(150).optional(),
   numero: z.string().max(20).optional(),
   complemento: z.string().max(80).optional(),

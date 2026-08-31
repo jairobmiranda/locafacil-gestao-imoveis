@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from 'react';
 import { useFormStatus } from 'react-dom';
+import { EntradaValor } from '@/componentes/campos-mascarados';
 import { criarLancamento, type EstadoFormulario } from './acoes';
 
 type Opcao = { id: string; nome: string; natureza?: 'ENTRADA' | 'SAIDA' };
@@ -77,7 +78,7 @@ export function FormularioLancamento({
 
         <label className={erros.valor ? 'campo com-erro' : 'campo'}>
           Valor
-          <input name="valor" type="number" step="0.01" min="0.01" required />
+          <EntradaValor name="valor" required />
           {erros.valor ? <span className="mensagem-campo">{erros.valor}</span> : null}
         </label>
 

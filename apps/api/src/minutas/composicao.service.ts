@@ -43,17 +43,45 @@ function formatarDocumento(documento: string | null): string | null {
     return null;
   }
 
-  const digitos = documento.replace(/\D/g, '');
+  const limpo = documento.toUpperCase().replace(/[^0-9A-Z]/g, '');
 
-  if (digitos.length === 11) {
-    return `CPF ${digitos.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')}`;
+  if (/^\d{11}$/.test(limpo)) {
+    return `CPF ${limpo.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')}`;
   }
 
-  if (digitos.length === 14) {
-    return `CNPJ ${digitos.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5')}`;
+  if (/^[0-9A-Z]{12}\d{2}$/.test(limpo)) {
+    return `CNPJ ${limpo.replace(/(.{2})(.{3})(.{3})(.{4})(.{2})/, '$1.$2.$3/$4-$5')}`;
   }
 
   return documento;
+}
+
+function formatarTelefone(telefone: string | null): string | null {
+  if (!telefone) {
+    return null;
+  }
+
+  const digitos = telefone.replace(/\D/g, '');
+
+  if (digitos.length === 11) {
+    return digitos.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+  }
+
+  if (digitos.length === 10) {
+    return digitos.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+  }
+
+  return telefone;
+}
+
+function formatarCep(cep: string | null): string | null {
+  if (!cep) {
+    return null;
+  }
+
+  const digitos = cep.replace(/\D/g, '');
+
+  return digitos.length === 8 ? digitos.replace(/(\d{2})(\d{3})(\d{3})/, '$1.$2-$3') : cep;
 }
 
 function montarEndereco(origem: {
@@ -75,7 +103,7 @@ function montarEndereco(origem: {
     .join(', ');
 
   const local = [origem.cidade, origem.uf].filter(Boolean).join('/');
-  const cep = origem.cep ? `CEP ${origem.cep}` : null;
+  const cep = origem.cep ? `CEP ${formatarCep(origem.cep)}` : null;
 
   return [linha, local, cep].filter(Boolean).join(', ') || 'endereço não informado';
 }
@@ -83,6 +111,7 @@ function montarEndereco(origem: {
 function qualificar(parte: PessoaContrato): ParteQualificada {
   const pessoa = parte.pessoa;
   const documento = formatarDocumento(pessoa.documento);
+  const telefone = formatarTelefone(pessoa.telefone);
 
   const trechos = [
     pessoa.nacionalidade ?? 'brasileiro(a)',
@@ -91,7 +120,7 @@ function qualificar(parte: PessoaContrato): ParteQualificada {
     pessoa.rg ? `portador(a) do RG nº ${pessoa.rg}${pessoa.orgaoExpedidor ? ` ${pessoa.orgaoExpedidor}` : ''}` : null,
     documento ? `inscrito(a) no ${documento}` : null,
     pessoa.email ? `endereço eletrônico ${pessoa.email}` : null,
-    pessoa.telefone ? `telefone e WhatsApp ${pessoa.telefone}` : null,
+    telefone ? `telefone e WhatsApp ${telefone}` : null,
     `residente e domiciliado(a) na ${montarEndereco(pessoa)}`,
   ].filter(Boolean) as string[];
 
@@ -100,7 +129,7 @@ function qualificar(parte: PessoaContrato): ParteQualificada {
     qualificacao: `${trechos.join(', ')}.`,
     documento,
     email: pessoa.email,
-    telefone: pessoa.telefone,
+    telefone,
     estadoCivil: pessoa.estadoCivil,
     casado: pessoa.estadoCivil === 'CASADO' || pessoa.estadoCivil === 'UNIAO_ESTAVEL',
     participacao: parte.participacao ? Number(parte.participacao) : null,

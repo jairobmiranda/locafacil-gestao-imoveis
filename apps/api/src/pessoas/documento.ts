@@ -19,10 +19,16 @@ export function cpfValido(documento: string): boolean {
   return digito(9) === Number(documento[9]) && digito(10) === Number(documento[10]);
 }
 
+/**
+ * CNPJ alfanumerico (IN RFB 2.229/2024): as 12 primeiras posicoes podem ter letras e o valor
+ * de cada caractere no calculo e `codigo ASCII - 48`. Os 2 digitos verificadores sao numericos.
+ */
 export function cnpjValido(documento: string): boolean {
-  if (documento.length !== 14 || /^(\d)\1{13}$/.test(documento)) {
+  if (!/^[0-9A-Z]{12}\d{2}$/.test(documento) || /^(.)\1{13}$/.test(documento)) {
     return false;
   }
+
+  const valorDe = (posicao: number): number => documento.charCodeAt(posicao) - 48;
 
   const digito = (ate: number): number => {
     const pesos = ate === 12 ? [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2] : [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
@@ -30,7 +36,7 @@ export function cnpjValido(documento: string): boolean {
     let soma = 0;
 
     for (let posicao = 0; posicao < ate; posicao += 1) {
-      soma += Number(documento[posicao]) * (pesos[posicao] as number);
+      soma += valorDe(posicao) * (pesos[posicao] as number);
     }
 
     const resto = soma % 11;

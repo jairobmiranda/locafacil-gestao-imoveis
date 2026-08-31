@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from 'react';
 import { useFormStatus } from 'react-dom';
+import { EntradaValor } from '@/componentes/campos-mascarados';
 import { criarContrato, type EstadoFormulario } from './acoes';
 
 type Opcao = { id: string; rotulo: string };
@@ -123,7 +124,7 @@ export function FormularioContrato({
 
           <label className={erros.valorAluguel ? 'campo com-erro' : 'campo'}>
             Valor do aluguel
-            <input name="valorAluguel" type="number" step="0.01" min="0.01" required />
+            <EntradaValor name="valorAluguel" required />
             {erros.valorAluguel ? (
               <span className="mensagem-campo">{erros.valorAluguel}</span>
             ) : null}
@@ -160,7 +161,7 @@ export function FormularioContrato({
 
             <label className="campo">
               Valor
-              <input name="itemValor" type="number" step="0.01" min="0" />
+              <EntradaValor name="itemValor" />
             </label>
 
             <button
@@ -188,7 +189,7 @@ export function FormularioContrato({
         <div className="grade">
           <label className="campo">
             Multa por atraso (%)
-            <input name="percentualMulta" type="number" step="0.01" defaultValue={2} />
+            <EntradaValor name="percentualMulta" valor={2} />
           </label>
 
           <label className="campo">
@@ -198,7 +199,7 @@ export function FormularioContrato({
 
           <label className="campo">
             Desconto de pontualidade
-            <input name="descontoPontualidade" type="number" step="0.01" defaultValue={0} />
+            <EntradaValor name="descontoPontualidade" valor={0} />
           </label>
 
           <label className="campo">
@@ -235,7 +236,7 @@ export function FormularioContrato({
 
           <label className="campo">
             Valor da garantia
-            <input name="valorGarantia" type="number" step="0.01" />
+            <EntradaValor name="valorGarantia" />
           </label>
 
           <label className="campo">

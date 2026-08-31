@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
+import { EntradaCep, EntradaValor } from '@/componentes/campos-mascarados';
 import type { Imovel } from '@/lib/tipos';
 import { salvarImovel, type EstadoFormulario } from './acoes';
 
@@ -107,7 +108,7 @@ export function FormularioImovel({ imovel }: { imovel?: Imovel }) {
 
         <div className="grade">
           <Campo nome="cep" rotulo="CEP" erro={erros.cep}>
-            <input id="cep" name="cep" defaultValue={imovel?.cep ?? ''} maxLength={9} />
+            <EntradaCep id="cep" name="cep" valor={imovel?.cep} />
           </Campo>
 
           <Campo nome="logradouro" rotulo="Logradouro" erro={erros.logradouro}>
@@ -190,33 +191,15 @@ export function FormularioImovel({ imovel }: { imovel?: Imovel }) {
           </Campo>
 
           <Campo nome="valorAquisicao" rotulo="Valor de aquisição" erro={erros.valorAquisicao}>
-            <input
-              id="valorAquisicao"
-              name="valorAquisicao"
-              type="number"
-              step="0.01"
-              defaultValue={imovel?.valorAquisicao ?? ''}
-            />
+            <EntradaValor id="valorAquisicao" name="valorAquisicao" valor={imovel?.valorAquisicao} />
           </Campo>
 
           <Campo nome="valorVendaAlvo" rotulo="Valor de venda alvo" erro={erros.valorVendaAlvo}>
-            <input
-              id="valorVendaAlvo"
-              name="valorVendaAlvo"
-              type="number"
-              step="0.01"
-              defaultValue={imovel?.valorVendaAlvo ?? ''}
-            />
+            <EntradaValor id="valorVendaAlvo" name="valorVendaAlvo" valor={imovel?.valorVendaAlvo} />
           </Campo>
 
           <Campo nome="aluguelAlvo" rotulo="Aluguel alvo" erro={erros.aluguelAlvo}>
-            <input
-              id="aluguelAlvo"
-              name="aluguelAlvo"
-              type="number"
-              step="0.01"
-              defaultValue={imovel?.aluguelAlvo ?? ''}
-            />
+            <EntradaValor id="aluguelAlvo" name="aluguelAlvo" valor={imovel?.aluguelAlvo} />
           </Campo>
         </div>
       </fieldset>

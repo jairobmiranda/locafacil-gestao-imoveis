@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
+import { EntradaCep, EntradaDocumento, EntradaTelefone } from '@/componentes/campos-mascarados';
 import type { Pessoa } from '@/lib/tipos';
 import { salvarPessoa, type EstadoFormulario } from './acoes';
 
@@ -35,7 +36,7 @@ export function FormularioPessoa({ pessoa }: { pessoa?: Pessoa }) {
 
           <label className={erros.documento ? 'campo com-erro' : 'campo'}>
             CPF ou CNPJ
-            <input name="documento" defaultValue={pessoa?.documento ?? ''} />
+            <EntradaDocumento name="documento" valor={pessoa?.documento} />
             {erros.documento ? <span className="mensagem-campo">{erros.documento}</span> : null}
           </label>
 
@@ -48,7 +49,7 @@ export function FormularioPessoa({ pessoa }: { pessoa?: Pessoa }) {
 
           <label className="campo">
             Telefone
-            <input name="telefone" defaultValue={pessoa?.telefone ?? ''} maxLength={20} />
+            <EntradaTelefone name="telefone" valor={pessoa?.telefone} />
           </label>
 
           <label className="campo">
@@ -68,7 +69,7 @@ export function FormularioPessoa({ pessoa }: { pessoa?: Pessoa }) {
         <div className="grade">
           <label className="campo">
             CEP
-            <input name="cep" defaultValue={pessoa?.cep ?? ''} maxLength={9} />
+            <EntradaCep name="cep" valor={pessoa?.cep} />
           </label>
 
           <label className="campo">

@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
+import { EntradaValor } from '@/componentes/campos-mascarados';
 import { formatarMoeda } from '@/lib/formato';
 import { informarPagamento, type EstadoPagamento } from './acoes';
 
@@ -49,14 +50,7 @@ export function FormularioPagamento({
 
         <label className="campo">
           Valor pago
-          <input
-            name="valor"
-            type="number"
-            step="0.01"
-            min="0.01"
-            defaultValue={valorSugerido}
-            required
-          />
+          <EntradaValor name="valor" valor={valorSugerido} required />
           <small className="texto-suave">Sugerido: {formatarMoeda(valorSugerido)}</small>
         </label>
 

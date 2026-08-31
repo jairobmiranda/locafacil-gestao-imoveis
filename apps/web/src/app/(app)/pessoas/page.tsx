@@ -1,18 +1,9 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { apiGet } from '@/lib/api';
+import { mascararDocumento, mascararTelefone } from '@/lib/mascaras';
 import type { Paginado, Pessoa } from '@/lib/tipos';
 import { BuscaPessoas } from './busca-pessoas';
-
-function formatarDocumento(documento: string | null): string {
-  if (!documento) {
-    return '-';
-  }
-
-  return documento.length === 11
-    ? documento.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
-    : documento.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
-}
 
 export default async function PaginaPessoas({
   searchParams,
@@ -68,11 +59,11 @@ export default async function PaginaPessoas({
                       {pessoa.nome}
                     </Link>
                   </td>
-                  <td data-label="Documento">{formatarDocumento(pessoa.documento)}</td>
+                  <td data-label="Documento">{mascararDocumento(pessoa.documento) || '-'}</td>
                   <td data-label="E-mail">
                     {pessoa.email ?? <span className="texto-suave">sem e-mail</span>}
                   </td>
-                  <td data-label="Telefone">{pessoa.telefone ?? '-'}</td>
+                  <td data-label="Telefone">{mascararTelefone(pessoa.telefone) || '-'}</td>
                   <td data-label="Cidade">{pessoa.cidade ?? '-'}</td>
                 </tr>
               ))}

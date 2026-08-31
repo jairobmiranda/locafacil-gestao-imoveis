@@ -19,6 +19,9 @@ export class PessoasService {
   constructor(private readonly prisma: PrismaService) {}
 
   async listar(filtros: ListarPessoasDto): Promise<Paginado<unknown>> {
+    // Documento e guardado sem mascara, entao a busca compara o termo tambem sem mascara.
+    const termoDocumento = filtros.busca?.toUpperCase().replace(/[^0-9A-Z]/g, '') ?? '';
+
     const where: Prisma.PessoaWhereInput = {
       ...(filtros.incluirArquivadas ? {} : { arquivadoEm: null }),
       ...(filtros.busca
@@ -26,7 +29,7 @@ export class PessoasService {
             OR: [
               { nome: { contains: filtros.busca } },
               { email: { contains: filtros.busca } },
-              { documento: { contains: filtros.busca.replace(/\D/g, '') } },
+              ...(termoDocumento ? [{ documento: { contains: termoDocumento } }] : []),
             ],
           }
         : {}),

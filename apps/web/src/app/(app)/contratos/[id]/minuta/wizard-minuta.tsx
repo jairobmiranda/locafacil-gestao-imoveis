@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import type { PapelParte, RespostasBlindagem } from '@locafacil/contracts';
+import { EntradaValorControlada } from '@/componentes/campos-mascarados';
+import { mascararDocumento } from '@/lib/mascaras';
 import {
   carregarPrevia,
   gerarMinuta,
@@ -607,7 +609,7 @@ function PassoPartes({
                   <div className="texto">
                     <span className="titulo">{pessoa?.nome ?? parte.pessoaId}</span>
                     <span className="explicacao">
-                      {pessoa?.documento ?? 'sem documento cadastrado'}
+                      {pessoa?.documento ? mascararDocumento(pessoa.documento) : 'sem documento cadastrado'}
                       {pessoa?.estadoCivil ? ` · ${pessoa.estadoCivil.toLowerCase()}` : ''}
                     </span>
 
@@ -807,14 +809,7 @@ function PassoGarantia({
       {exigeValor ? (
         <label>
           Valor da garantia
-          <input
-            type="number"
-            inputMode="decimal"
-            min={0}
-            step="0.01"
-            value={valorGarantia || ''}
-            onChange={(evento) => onValorGarantia(Number(evento.target.value))}
-          />
+          <EntradaValorControlada valor={valorGarantia} aoMudar={onValorGarantia} />
           {tipoGarantia === 'CAUCAO' ? (
             <span className="texto-suave">
               Máximo permitido: {limite.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}

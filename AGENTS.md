@@ -63,6 +63,9 @@ Nenhuma solução pode depender de o usuário limpar cookies ou abrir aba anôni
 - Componente com `useSearchParams` fica dentro de `<Suspense>`, senão a rota faz bailout para CSR.
 - Mutações são server actions (`acoes.ts` com `'use server'`) reusando o schema do contrato,
   retornando `EstadoFormulario` e chamando `revalidatePath`.
+- Filtros e campos **nunca** empilhados um por linha, com um combobox ocupando a largura inteira:
+  fica clean, mas não premium. Filtros vão em `div.filtros` (flex wrap) e campos de formulário em
+  `div.grade` (`auto-fit, minmax(190px, 1fr)`), com os botões em `div.acoes-formulario`.
 
 ## Prisma
 

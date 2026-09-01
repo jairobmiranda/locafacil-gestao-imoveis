@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import type { PapelParte, RespostasBlindagem } from '@locafacil/contracts';
 import { EntradaValorControlada } from '@/componentes/campos-mascarados';
+import { ComboboxBusca } from '@/componentes/combobox-busca';
 import { mascararDocumento } from '@/lib/mascaras';
 import {
   carregarPrevia,
@@ -665,17 +666,12 @@ function PassoPartes({
 
             <label>
               Adicionar
-              <select
-                value=""
-                onChange={(evento) => onAdicionar(definicao.papel, evento.target.value)}
-              >
-                <option value="">Selecione uma pessoa</option>
-                {pessoas.map((pessoa) => (
-                  <option key={pessoa.id} value={pessoa.id}>
-                    {pessoa.nome}
-                  </option>
-                ))}
-              </select>
+              <ComboboxBusca
+                opcoes={pessoas.map((pessoa) => ({ id: pessoa.id, rotulo: pessoa.nome }))}
+                placeholder="Buscar pessoa..."
+                limparAposSelecionar
+                onSelecionar={(pessoaId) => pessoaId && onAdicionar(definicao.papel, pessoaId)}
+              />
             </label>
           </div>
         );

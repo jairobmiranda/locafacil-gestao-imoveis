@@ -3,6 +3,7 @@
 import { useActionState, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { EntradaValor } from '@/componentes/campos-mascarados';
+import { ComboboxBusca } from '@/componentes/combobox-busca';
 import { criarContrato, type EstadoFormulario } from './acoes';
 
 type Opcao = { id: string; rotulo: string };
@@ -65,29 +66,13 @@ export function FormularioContrato({
 
           <label className={erros.partes ? 'campo com-erro' : 'campo'}>
             Inquilino
-            <select name="inquilinoId" required defaultValue="">
-              <option value="" disabled>
-                Selecione
-              </option>
-              {pessoas.map((pessoa) => (
-                <option key={pessoa.id} value={pessoa.id}>
-                  {pessoa.rotulo}
-                </option>
-              ))}
-            </select>
+            <ComboboxBusca name="inquilinoId" opcoes={pessoas} placeholder="Buscar pessoa..." />
             <small className="texto-suave">Será o contato principal das cobranças</small>
           </label>
 
           <label className="campo">
             Fiador (opcional)
-            <select name="fiadorId" defaultValue="">
-              <option value="">Nenhum</option>
-              {pessoas.map((pessoa) => (
-                <option key={pessoa.id} value={pessoa.id}>
-                  {pessoa.rotulo}
-                </option>
-              ))}
-            </select>
+            <ComboboxBusca name="fiadorId" opcoes={pessoas} placeholder="Buscar pessoa..." />
           </label>
 
           <label className={erros.emailsCopia ? 'campo com-erro' : 'campo'}>

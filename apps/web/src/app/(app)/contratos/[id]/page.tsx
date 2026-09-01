@@ -1,8 +1,12 @@
 import Link from 'next/link';
 import { apiGet } from '@/lib/api';
 import { formatarCompetencia, formatarData, formatarMoeda, rotular } from '@/lib/formato';
-import type { Lancamento, Paginado } from '@/lib/tipos';
+import type { Lancamento, Paginado, Pessoa } from '@/lib/tipos';
 import { AcoesContrato } from './acoes-contrato';
+import { FormularioContrato } from '../formulario-contrato';
+
+type Categoria = { id: string; nome: string; natureza: 'ENTRADA' | 'SAIDA' };
+type ChavePix = { id: string; tipoChave: string; chave: string; ativa: boolean };
 
 type ContratoDetalhe = {
   id: string;
@@ -16,16 +20,18 @@ type ContratoDetalhe = {
   percentualJurosDia: number;
   descontoPontualidade: number;
   indiceReajuste: string;
+  intervaloReajusteMeses: number;
   proximoReajusteEm: string | null;
   tipoGarantia: string;
   valorGarantia: number | null;
   gerarCobrancas: boolean;
+  diasAvisoEncerramento: number;
   diasAntecedenciaGeracao: number;
   observacoes: string | null;
   emailsCopia: string | null;
   imovel: { id: string; apelido: string };
   chavePix: { id: string; tipoChave: string; chave: string } | null;
-  itens: { id: string; descricao: string; valor: number; categoria: { nome: string } }[];
+  itens: { id: string; descricao: string; valor: number; categoria: { id: string; nome: string } }[];
   partes: {
     id: string;
     papel: string;
@@ -34,6 +40,9 @@ type ContratoDetalhe = {
   }[];
 };
 
+/** Antes de ativo o contrato ainda nao foi para a rua: as condicoes podem ser corrigidas livremente. */
+const SITUACOES_EDITAVEIS = ['RASCUNHO', 'EM_ASSINATURA'];
+
 export default async function PaginaContrato({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
@@ -41,6 +50,18 @@ export default async function PaginaContrato({ params }: { params: Promise<{ id:
     apiGet<ContratoDetalhe>(`/contratos/${id}`),
     apiGet<Paginado<Lancamento>>('/lancamentos', { contratoId: id, limite: 12 }),
   ]);
+
+  const dadosEdicao = SITUACOES_EDITAVEIS.includes(contrato.situacao)
+    ? await (async () => {
+        const [pessoas, categorias, chaves] = await Promise.all([
+          apiGet<Paginado<Pessoa>>('/pessoas', { limite: 100 }),
+          apiGet<Categoria[]>('/categorias', { natureza: 'ENTRADA' }),
+          apiGet<ChavePix[]>('/pix/chaves'),
+        ]);
+
+        return { pessoas, categorias, chaves };
+      })()
+    : null;
 
   const totalMensal =
     contrato.valorAluguel + contrato.itens.reduce((soma, item) => soma + item.valor, 0);
@@ -126,7 +147,7 @@ export default async function PaginaContrato({ params }: { params: Promise<{ id:
         </p>
       </section>
 
-      {contrato.itens.length > 0 ? (
+      {!dadosEdicao && contrato.itens.length > 0 ? (
         <section>
           <div className="cabecalho-secao">
             <h2>Encargos recorrentes</h2>
@@ -201,44 +222,69 @@ export default async function PaginaContrato({ params }: { params: Promise<{ id:
         )}
       </section>
 
-      <section>
-        <div className="cabecalho-secao">
-          <h2>Condições</h2>
-        </div>
-        <div className="cartao">
-          <table className="tabela-dados">
-            <tbody>
-              <tr>
-                <td>Multa por atraso</td>
-                <td className="direita">{contrato.percentualMulta}%</td>
-              </tr>
-              <tr>
-                <td>Juros ao dia</td>
-                <td className="direita">{contrato.percentualJurosDia}%</td>
-              </tr>
-              <tr>
-                <td>Desconto de pontualidade</td>
-                <td className="direita">{formatarMoeda(contrato.descontoPontualidade)}</td>
-              </tr>
-              <tr>
-                <td>Garantia</td>
-                <td className="direita">
-                  {rotular(contrato.tipoGarantia)}
-                  {contrato.valorGarantia ? ` · ${formatarMoeda(contrato.valorGarantia)}` : ''}
-                </td>
-              </tr>
-              <tr>
-                <td>Chave Pix</td>
-                <td className="direita">
-                  {contrato.chavePix
-                    ? `${contrato.chavePix.tipoChave}: ${contrato.chavePix.chave}`
-                    : 'Chave padrão'}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
+      {dadosEdicao ? (
+        <section>
+          <div className="cabecalho-secao">
+            <h2>Editar contrato</h2>
+          </div>
+          <p className="texto-suave">
+            O contrato ainda não está ativo: as condições podem ser ajustadas livremente. Para
+            trocar o inquilino ou o fiador, use o assistente de minuta. O imóvel não pode ser
+            alterado depois de criado o contrato.
+          </p>
+          <FormularioContrato
+            imoveis={[]}
+            pessoas={dadosEdicao.pessoas.itens.map((pessoa) => ({
+              id: pessoa.id,
+              rotulo: pessoa.email ? `${pessoa.nome} (${pessoa.email})` : `${pessoa.nome} (sem e-mail)`,
+            }))}
+            categorias={dadosEdicao.categorias}
+            chavesPix={dadosEdicao.chaves
+              .filter((chave) => chave.ativa)
+              .map((chave) => ({ id: chave.id, rotulo: `${chave.tipoChave}: ${chave.chave}` }))}
+            contrato={contrato}
+          />
+        </section>
+      ) : (
+        <section>
+          <div className="cabecalho-secao">
+            <h2>Condições</h2>
+          </div>
+          <div className="cartao">
+            <table className="tabela-dados">
+              <tbody>
+                <tr>
+                  <td>Multa por atraso</td>
+                  <td className="direita">{contrato.percentualMulta}%</td>
+                </tr>
+                <tr>
+                  <td>Juros ao dia</td>
+                  <td className="direita">{contrato.percentualJurosDia}%</td>
+                </tr>
+                <tr>
+                  <td>Desconto de pontualidade</td>
+                  <td className="direita">{formatarMoeda(contrato.descontoPontualidade)}</td>
+                </tr>
+                <tr>
+                  <td>Garantia</td>
+                  <td className="direita">
+                    {rotular(contrato.tipoGarantia)}
+                    {contrato.valorGarantia ? ` · ${formatarMoeda(contrato.valorGarantia)}` : ''}
+                  </td>
+                </tr>
+                <tr>
+                  <td>Chave Pix</td>
+                  <td className="direita">
+                    {contrato.chavePix
+                      ? `${contrato.chavePix.tipoChave}: ${contrato.chavePix.chave}`
+                      : 'Chave padrão'}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
     </>
   );
 }

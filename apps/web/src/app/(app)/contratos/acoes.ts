@@ -92,6 +92,46 @@ export async function criarContrato(
   redirect(`/contratos/${criado.id}`);
 }
 
+/** So os campos gerais do contrato: imovel e partes tem fluxo proprio (criacao e assistente de minuta). */
+export async function atualizarContrato(
+  _anterior: EstadoFormulario,
+  dados: FormData,
+): Promise<EstadoFormulario> {
+  const id = String(dados.get('id') ?? '');
+
+  const corpo = {
+    dataInicio: texto(dados.get('dataInicio')),
+    dataFim: texto(dados.get('dataFim')),
+    diaVencimento: numero(dados.get('diaVencimento'), 10),
+    valorAluguel: numero(dados.get('valorAluguel')),
+    percentualMulta: numero(dados.get('percentualMulta'), 2),
+    percentualJurosDia: numero(dados.get('percentualJurosDia'), 0.033),
+    descontoPontualidade: numero(dados.get('descontoPontualidade'), 0),
+    indiceReajuste: String(dados.get('indiceReajuste') ?? 'IGPM'),
+    intervaloReajusteMeses: numero(dados.get('intervaloReajusteMeses'), 12),
+    tipoGarantia: String(dados.get('tipoGarantia') ?? 'NENHUMA'),
+    valorGarantia: numero(dados.get('valorGarantia')),
+    chavePixId: texto(dados.get('chavePixId')),
+    diasAvisoEncerramento: numero(dados.get('diasAvisoEncerramento'), 90),
+    diasAntecedenciaGeracao: numero(dados.get('diasAntecedenciaGeracao'), 10),
+    gerarCobrancas: dados.get('gerarCobrancas') === 'on',
+    observacoes: texto(dados.get('observacoes')),
+    emailsCopia: texto(dados.get('emailsCopia')) ?? null,
+    itens: extrairItens(dados),
+  };
+
+  try {
+    await apiPatch(`/contratos/${id}`, corpo);
+  } catch (erro) {
+    return traduzir(erro);
+  }
+
+  revalidatePath('/contratos');
+  revalidatePath(`/contratos/${id}`);
+
+  return {};
+}
+
 export async function ativarContrato(id: string): Promise<void> {
   await apiPatch(`/contratos/${id}/ativar`);
   revalidatePath('/contratos');

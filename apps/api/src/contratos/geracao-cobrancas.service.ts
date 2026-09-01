@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { apenasData, diferencaEmDias, formatarCompetencia, primeiroDiaDoMes, vencimentoNoMes } from '../comum/datas';
+import { apenasData, diferencaEmDias, formatarCompetencia, primeiroDiaDoMes, proximoDiaUtil, vencimentoNoMes } from '../comum/datas';
+import { FeriadosService } from '../feriados/feriados.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { gerarBrCode, higienizarTxid } from '../pix/br-code';
 
@@ -14,7 +15,10 @@ type ResumoGeracao = {
 export class GeracaoCobrancasService {
   private readonly logger = new Logger(GeracaoCobrancasService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly feriados: FeriadosService,
+  ) {}
 
   async gerar(referencia = new Date()): Promise<ResumoGeracao> {
     const hoje = apenasData(referencia);
@@ -185,8 +189,25 @@ export class GeracaoCobrancasService {
 
   /** Move para ATRASADO o que venceu e nao foi pago. */
   async marcarAtrasos(referencia = new Date()): Promise<number> {
+    const hoje = apenasData(referencia);
+    const feriados = await this.feriados.chaves();
+
+    const candidatos = await this.prisma.lancamento.findMany({
+      where: { situacao: 'PENDENTE', vencimento: { lt: hoje } },
+      select: { id: true, vencimento: true },
+    });
+
+    // Vencimento em fim de semana ou feriado so vira atraso depois do proximo dia util.
+    const vencidos = candidatos
+      .filter((item) => proximoDiaUtil(item.vencimento as Date, feriados) < hoje)
+      .map((item) => item.id);
+
+    if (vencidos.length === 0) {
+      return 0;
+    }
+
     const { count } = await this.prisma.lancamento.updateMany({
-      where: { situacao: 'PENDENTE', vencimento: { lt: apenasData(referencia) } },
+      where: { id: { in: vencidos }, situacao: 'PENDENTE' },
       data: { situacao: 'ATRASADO' },
     });
 

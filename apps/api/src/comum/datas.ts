@@ -31,3 +31,33 @@ export function vencimentoNoMes(ano: number, mes: number, diaDesejado: number): 
 export function formatarCompetencia(data: Date): string {
   return `${data.getUTCFullYear()}-${String(data.getUTCMonth() + 1).padStart(2, '0')}`;
 }
+
+/** Chave `AAAA-MM-DD` usada para comparar feriados sem esbarrar em fuso. */
+export function chaveData(data: Date): string {
+  return apenasData(data).toISOString().slice(0, 10);
+}
+
+export function ehFimDeSemana(data: Date): boolean {
+  const dia = data.getUTCDay();
+
+  return dia === 0 || dia === 6;
+}
+
+/**
+ * Vencimento caido em sabado, domingo ou feriado so vira mora no proximo dia util
+ * (art. 132 §1o do Codigo Civil). Feriados chegam como chaves `AAAA-MM-DD`.
+ */
+export function proximoDiaUtil(data: Date, feriados: ReadonlySet<string> = new Set()): Date {
+  let candidato = apenasData(data);
+
+  // 10 saltos cobrem qualquer emenda de feriado real sem risco de laco infinito.
+  for (let i = 0; i < 10; i += 1) {
+    if (!ehFimDeSemana(candidato) && !feriados.has(chaveData(candidato))) {
+      return candidato;
+    }
+
+    candidato = somarDias(candidato, 1);
+  }
+
+  return candidato;
+}

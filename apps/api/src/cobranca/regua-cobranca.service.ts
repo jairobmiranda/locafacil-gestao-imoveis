@@ -1,7 +1,8 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type { EnviarCobrancaManualDto } from '@locafacil/contracts';
-import { apenasData, diferencaEmDias, somarDias } from '../comum/datas';
+import { apenasData, diferencaEmDias, proximoDiaUtil, somarDias } from '../comum/datas';
+import { FeriadosService } from '../feriados/feriados.service';
 import { calcularEncargos } from '../lancamentos/encargos';
 import { PixService } from '../pix/pix.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -56,10 +57,12 @@ export class ReguaCobrancaService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly pix: PixService,
+    private readonly feriados: FeriadosService,
   ) {}
 
   async agendar(referencia = new Date()): Promise<ResumoRegua> {
     const hoje = apenasData(referencia);
+    const feriados = await this.feriados.chaves();
 
     const cobrancas = await this.prisma.lancamento.findMany({
       where: {
@@ -105,7 +108,7 @@ export class ReguaCobrancaService {
           .filter((cobranca) => !regra.apenasSeSituacao || regra.apenasSeSituacao === cobranca.situacao)
           .map((cobranca) => ({
             cobranca,
-            ocorrencia: this.ocorrenciaDeHoje(regra, cobranca.vencimento as Date, hoje),
+            ocorrencia: this.ocorrenciaDeHoje(regra, cobranca.vencimento as Date, hoje, feriados),
           }))
           .filter((item): item is { cobranca: Cobranca; ocorrencia: number } => item.ocorrencia !== null);
 
@@ -124,6 +127,7 @@ export class ReguaCobrancaService {
             elegiveis[0]?.ocorrencia ?? 1,
             contato,
             hoje,
+            feriados,
           );
 
           if (agendado) {
@@ -136,7 +140,14 @@ export class ReguaCobrancaService {
         }
 
         for (const { cobranca, ocorrencia } of elegiveis) {
-          const agendado = await this.agendarNotificacao(cobranca, regra, ocorrencia, contato, hoje);
+          const agendado = await this.agendarNotificacao(
+            cobranca,
+            regra,
+            ocorrencia,
+            contato,
+            hoje,
+            feriados,
+          );
 
           if (agendado) {
             resumo.notificacoesAgendadas += 1;
@@ -171,15 +182,16 @@ export class ReguaCobrancaService {
   }
 
   /**
-   * A ocorrencia 1 cai em `vencimento + diasOffset`. Havendo repeticao, as seguintes
+   * A ocorrencia 1 cai em `vencimento util + diasOffset`. Havendo repeticao, as seguintes
    * caem a cada `intervaloRepeticaoDias`. Retorna o numero da ocorrencia que bate com hoje.
    */
   private ocorrenciaDeHoje(
     regra: { diasOffset: number; intervaloRepeticaoDias: number | null; maximoRepeticoes: number | null },
     vencimento: Date,
     hoje: Date,
+    feriados: ReadonlySet<string>,
   ): number | null {
-    const primeira = somarDias(apenasData(vencimento), regra.diasOffset);
+    const primeira = somarDias(proximoDiaUtil(vencimento, feriados), regra.diasOffset);
     const distancia = diferencaEmDias(primeira, hoje);
 
     if (distancia < 0) {
@@ -205,8 +217,9 @@ export class ReguaCobrancaService {
     ocorrencia: number,
     contato: { nome: string; email: string | null },
     hoje: Date,
+    feriados: ReadonlySet<string>,
   ): Promise<boolean> {
-    const variaveis = montarVariaveis(cobranca, contato, hoje);
+    const variaveis = montarVariaveis(cobranca, contato, hoje, feriados);
     const assunto = renderizar(regra.modeloEmail.assunto, variaveis);
     const corpoHtml = renderizar(regra.modeloEmail.corpoHtml, variaveis);
 
@@ -255,6 +268,7 @@ export class ReguaCobrancaService {
     ocorrencia: number,
     contato: { nome: string; email: string | null },
     hoje: Date,
+    feriados: ReadonlySet<string>,
   ): Promise<boolean> {
     const [maisAntiga] = cobrancas;
 
@@ -262,8 +276,8 @@ export class ReguaCobrancaService {
       return false;
     }
 
-    const pixPayload = await this.pixConsolidado(cobrancas, hoje);
-    const variaveis = montarVariaveisConsolidado(cobrancas, contato, hoje, pixPayload);
+    const pixPayload = await this.pixConsolidado(cobrancas, hoje, feriados);
+    const variaveis = montarVariaveisConsolidado(cobrancas, contato, hoje, pixPayload, feriados);
 
     const [hora, minuto] = regra.horaEnvio.split(':').map(Number);
     const agendadoPara = new Date(hoje);
@@ -298,7 +312,11 @@ export class ReguaCobrancaService {
   }
 
   /** Sem chave Pix configurada o e-mail ainda vale; so vai sem QR. */
-  private async pixConsolidado(cobrancas: Cobranca[], hoje: Date): Promise<string | null> {
+  private async pixConsolidado(
+    cobrancas: Cobranca[],
+    hoje: Date,
+    feriados: ReadonlySet<string>,
+  ): Promise<string | null> {
     const [maisAntiga] = cobrancas;
 
     if (!maisAntiga) {
@@ -308,8 +326,13 @@ export class ReguaCobrancaService {
     const total = cobrancas.reduce(
       (soma, cobranca) =>
         soma.plus(
-          calcularEncargos(cobranca.valor, cobranca.vencimento, hoje, cobranca.contrato)
-            .totalDevido,
+          calcularEncargos(
+            cobranca.valor,
+            cobranca.vencimento,
+            hoje,
+            cobranca.contrato,
+            feriados,
+          ).totalDevido,
         ),
       new Prisma.Decimal(0),
     );
@@ -368,7 +391,12 @@ export class ReguaCobrancaService {
     }
 
     const agora = new Date();
-    const variaveis = montarVariaveis(cobranca, { nome: contato?.nome ?? destinatario }, agora);
+    const variaveis = montarVariaveis(
+      cobranca,
+      { nome: contato?.nome ?? destinatario },
+      agora,
+      await this.feriados.chaves(),
+    );
     const anteriores = await this.prisma.notificacao.count({
       where: { lancamentoId, regraCobrancaId: null },
     });

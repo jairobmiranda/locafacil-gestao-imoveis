@@ -45,12 +45,14 @@ export function montarVariaveis(
   lancamento: LancamentoParaEmail,
   inquilino: { nome: string },
   referencia: Date,
+  feriados: ReadonlySet<string> = new Set(),
 ): Record<string, string> {
   const encargos = calcularEncargos(
     lancamento.valor,
     lancamento.vencimento,
     referencia,
     lancamento.contrato,
+    feriados,
   );
 
   const endereco = [
@@ -80,6 +82,10 @@ export function montarVariaveis(
     'cobranca.competencia': FORMATO_MES.format(lancamento.competencia),
     'cobranca.descricao': escaparHtml(lancamento.descricao),
     'cobranca.vencimento': lancamento.vencimento ? FORMATO_DATA.format(lancamento.vencimento) : '',
+    // Prorrogado para o proximo dia util quando cai em fim de semana ou feriado.
+    'cobranca.vencimento_util': encargos.vencimentoEfetivo
+      ? FORMATO_DATA.format(encargos.vencimentoEfetivo)
+      : '',
     'cobranca.valor': FORMATO_MOEDA.format(lancamento.valor.toNumber()),
     'cobranca.valor_total': FORMATO_MOEDA.format(encargos.totalDevido.toNumber()),
     'cobranca.valor_multa': FORMATO_MOEDA.format(encargos.valorMulta.toNumber()),
@@ -111,6 +117,7 @@ export function montarVariaveisConsolidado(
   inquilino: { nome: string },
   referencia: Date,
   pixPayload: string | null,
+  feriados: ReadonlySet<string> = new Set(),
 ): Record<string, string> {
   const [maisAntiga] = cobrancas;
 
@@ -119,7 +126,13 @@ export function montarVariaveisConsolidado(
   }
 
   const encargos = cobrancas.map((cobranca) =>
-    calcularEncargos(cobranca.valor, cobranca.vencimento, referencia, cobranca.contrato),
+    calcularEncargos(
+      cobranca.valor,
+      cobranca.vencimento,
+      referencia,
+      cobranca.contrato,
+      feriados,
+    ),
   );
 
   const total = encargos.reduce((soma, item) => soma.plus(item.totalDevido), new Prisma.Decimal(0));
@@ -140,7 +153,7 @@ export function montarVariaveisConsolidado(
     .join('');
 
   return {
-    ...montarVariaveis(maisAntiga, inquilino, referencia),
+    ...montarVariaveis(maisAntiga, inquilino, referencia, feriados),
     'cobrancas.quantidade': String(cobrancas.length),
     'cobrancas.total': FORMATO_MOEDA.format(total.toNumber()),
     'cobrancas.multa': FORMATO_MOEDA.format(multa.toNumber()),

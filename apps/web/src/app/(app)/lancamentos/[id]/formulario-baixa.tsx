@@ -14,6 +14,18 @@ const FORMAS = [
   { valor: 'CARTAO', rotulo: 'Cartão' },
 ];
 
+/** Espelha o `proximoDiaUtil` da API para o aviso da tela; feriados só a API conhece. */
+function proximoDiaUtil(data: string): Date {
+  const [ano, mes, dia] = data.slice(0, 10).split('-').map(Number);
+  const resultado = new Date(Date.UTC(ano ?? 0, (mes ?? 1) - 1, dia ?? 1));
+
+  while (resultado.getUTCDay() === 0 || resultado.getUTCDay() === 6) {
+    resultado.setUTCDate(resultado.getUTCDate() + 1);
+  }
+
+  return resultado;
+}
+
 function Botao() {
   const { pending } = useFormStatus();
 
@@ -36,7 +48,7 @@ export function FormularioBaixa({
   const [estado, acao] = useActionState<EstadoFormulario, FormData>(baixarLancamento, {});
   const erros = estado.campos ?? {};
   const hoje = new Date().toISOString().slice(0, 10);
-  const emAtraso = vencimento ? new Date(vencimento) < new Date(hoje) : false;
+  const emAtraso = vencimento ? proximoDiaUtil(vencimento) < new Date(hoje) : false;
 
   return (
     <form action={acao} className="cartao formulario">

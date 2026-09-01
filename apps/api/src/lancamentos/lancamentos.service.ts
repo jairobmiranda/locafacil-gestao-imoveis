@@ -12,6 +12,7 @@ import type {
   ListarLancamentosDto,
   Paginado,
 } from '@locafacil/contracts';
+import { FeriadosService } from '../feriados/feriados.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { calcularEncargos } from './encargos';
 
@@ -25,7 +26,10 @@ const INCLUI_DETALHE = {
 
 @Injectable()
 export class LancamentosService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly feriados: FeriadosService,
+  ) {}
 
   async listar(filtros: ListarLancamentosDto): Promise<Paginado<unknown>> {
     const where: Prisma.LancamentoWhereInput = {
@@ -148,6 +152,7 @@ export class LancamentosService {
       lancamento.vencimento,
       dados.pagoEm,
       lancamento.contrato,
+      await this.feriados.chaves(),
     );
 
     const valorPago = new Prisma.Decimal(dados.valorPago);

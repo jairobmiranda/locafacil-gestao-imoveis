@@ -41,6 +41,7 @@ const VARIAVEIS = [
   'imovel.endereco',
   'cobranca.competencia',
   'cobranca.vencimento',
+  'cobranca.vencimento_util',
   'cobranca.valor',
   'cobranca.valor_total',
   'cobranca.itens',

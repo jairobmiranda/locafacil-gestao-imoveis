@@ -7,6 +7,8 @@ type Resumo = {
   imovel: string;
   competencia: string;
   vencimento: string | null;
+  vencimentoEfetivo: string | null;
+  prorrogado: boolean;
   valor: number;
   valorTotal: number;
   diasAtraso: number;
@@ -53,7 +55,16 @@ export default async function PaginaPagamento({ params }: { params: Promise<{ to
           </div>
           <div>
             <dt>Vencimento</dt>
-            <dd>{formatarData(cobranca.vencimento)}</dd>
+            <dd>
+              {formatarData(cobranca.vencimento)}
+              {cobranca.prorrogado ? (
+                <small className="texto-suave">
+                  {' '}
+                  Cai em dia não útil: pode pagar sem encargos até{' '}
+                  {formatarData(cobranca.vencimentoEfetivo)}
+                </small>
+              ) : null}
+            </dd>
           </div>
           <div>
             <dt>Valor {cobranca.diasAtraso > 0 ? 'com encargos' : 'devido'}</dt>

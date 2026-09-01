@@ -4,6 +4,7 @@ export * from './categoria';
 export * from './cobranca';
 export * from './comum';
 export * from './contrato';
+export * from './feriado';
 export * from './imovel';
 export * from './implantacao';
 export * from './lancamento';

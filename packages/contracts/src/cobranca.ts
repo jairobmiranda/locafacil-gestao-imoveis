@@ -107,6 +107,7 @@ export const VARIAVEIS_MODELO_EMAIL = [
   'cobranca.competencia',
   'cobranca.descricao',
   'cobranca.vencimento',
+  'cobranca.vencimento_util',
   'cobranca.valor',
   'cobranca.valor_total',
   'cobranca.valor_multa',

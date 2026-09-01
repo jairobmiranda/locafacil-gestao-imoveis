@@ -6,6 +6,7 @@ import { LinkNavegacao } from '../link-navegacao';
 const ABAS = [
   { href: '/configuracoes/pix', rotulo: 'Chaves Pix' },
   { href: '/configuracoes/categorias', rotulo: 'Categorias' },
+  { href: '/configuracoes/feriados', rotulo: 'Feriados' },
   { href: '/configuracoes/modelos', rotulo: 'Modelos de e-mail' },
   { href: '/configuracoes/regua', rotulo: 'Régua de cobrança' },
   { href: '/configuracoes/notificacoes', rotulo: 'Envios' },

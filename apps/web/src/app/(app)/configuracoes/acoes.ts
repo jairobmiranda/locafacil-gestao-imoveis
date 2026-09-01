@@ -111,6 +111,39 @@ export async function removerCategoria(id: string): Promise<void> {
   revalidatePath('/configuracoes/categorias');
 }
 
+// ----- Feriados -----
+
+export async function salvarFeriado(
+  _anterior: EstadoFormulario,
+  dados: FormData,
+): Promise<EstadoFormulario> {
+  const id = texto(dados.get('id'));
+
+  const corpo = {
+    data: String(dados.get('data') ?? ''),
+    descricao: String(dados.get('descricao') ?? '').trim(),
+  };
+
+  try {
+    if (id) {
+      await apiPatch(`/feriados/${id}`, corpo);
+    } else {
+      await apiPost('/feriados', corpo);
+    }
+  } catch (erro) {
+    return traduzir(erro);
+  }
+
+  revalidatePath('/configuracoes/feriados');
+
+  return { sucesso: id ? 'Feriado atualizado' : 'Feriado cadastrado' };
+}
+
+export async function removerFeriado(id: string): Promise<void> {
+  await apiDelete(`/feriados/${id}`);
+  revalidatePath('/configuracoes/feriados');
+}
+
 // ----- Modelos de e-mail -----
 
 export async function salvarModelo(

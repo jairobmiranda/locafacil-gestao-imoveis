@@ -5,6 +5,7 @@ import { AnexosService } from '../anexos/anexos.service';
 import { lerTokenPublico } from '../comum/link-assinado';
 import { DestinatariosInternosService } from '../email/destinatarios-internos.service';
 import { ENVIADOR_EMAIL, type EnviadorEmail } from '../email/enviador-email';
+import { FeriadosService } from '../feriados/feriados.service';
 import { calcularEncargos } from '../lancamentos/encargos';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -26,6 +27,7 @@ export class PublicoService {
     private readonly anexos: AnexosService,
     private readonly config: ConfigService,
     private readonly destinatarios: DestinatariosInternosService,
+    private readonly feriados: FeriadosService,
     @Inject(ENVIADOR_EMAIL) private readonly enviador: EnviadorEmail,
   ) {}
 
@@ -37,6 +39,7 @@ export class PublicoService {
       cobranca.vencimento,
       new Date(),
       cobranca.contrato,
+      await this.feriados.chaves(),
     );
 
     const aviso = await this.prisma.avisoPagamento.findFirst({
@@ -50,6 +53,8 @@ export class PublicoService {
       imovel: cobranca.imovel.apelido,
       competencia: cobranca.competencia,
       vencimento: cobranca.vencimento,
+      vencimentoEfetivo: encargos.vencimentoEfetivo,
+      prorrogado: encargos.prorrogado,
       valor: cobranca.valor,
       valorTotal: encargos.totalDevido,
       diasAtraso: encargos.diasAtraso,

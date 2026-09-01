@@ -10,6 +10,7 @@ import { DecimalInterceptor } from './comum/decimal.interceptor';
 import { ContratosModule } from './contratos/contratos.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { EmailModule } from './email/email.module';
+import { FeriadosModule } from './feriados/feriados.module';
 import { ImoveisModule } from './imoveis/imoveis.module';
 import { ImplantacaoModule } from './implantacao/implantacao.module';
 import { LancamentosModule } from './lancamentos/lancamentos.module';
@@ -33,6 +34,7 @@ import { VistoriasModule } from './vistorias/vistorias.module';
     CobrancaModule,
     ContratosModule,
     DashboardModule,
+    FeriadosModule,
     ImoveisModule,
     ImplantacaoModule,
     LancamentosModule,

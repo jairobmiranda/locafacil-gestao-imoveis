@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { FeriadosModule } from '../feriados/feriados.module';
 import { PixModule } from '../pix/pix.module';
 import { CobrancaController } from './cobranca.controller';
 import { CobrancaScheduler } from './cobranca.scheduler';
@@ -8,7 +9,7 @@ import { ParametrosCobrancaService } from './parametros-cobranca.service';
 import { ReguaCobrancaService } from './regua-cobranca.service';
 
 @Module({
-  imports: [PixModule],
+  imports: [PixModule, FeriadosModule],
   controllers: [CobrancaController],
   providers: [
     CobrancaService,

@@ -128,6 +128,8 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  /* Fica no html (não no body) para não quebrar o position: sticky da barra lateral no Chromium. */
+  overflow-x: hidden;
 }
 
 html,
@@ -144,7 +146,6 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
-  overflow-x: hidden;
 }
 
 ::selection {

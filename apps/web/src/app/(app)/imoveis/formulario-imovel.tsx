@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { EntradaCep, EntradaValor } from '@/componentes/campos-mascarados';
 import type { Imovel } from '@/lib/tipos';
@@ -55,8 +55,18 @@ function BotaoSalvar() {
   );
 }
 
+type CaracteristicaFormulario = { chave: number; descricao?: string; quantidade?: number };
+
 export function FormularioImovel({ imovel }: { imovel?: Imovel }) {
   const [estado, acao] = useActionState<EstadoFormulario, FormData>(salvarImovel, {});
+  const [caracteristicas, setCaracteristicas] = useState<CaracteristicaFormulario[]>(
+    () =>
+      imovel?.caracteristicas.map((caracteristica, indice) => ({
+        chave: indice,
+        descricao: caracteristica.descricao,
+        quantidade: caracteristica.quantidade ?? undefined,
+      })) ?? [],
+  );
   const erros = estado.campos ?? {};
 
   return (
@@ -159,6 +169,10 @@ export function FormularioImovel({ imovel }: { imovel?: Imovel }) {
             <input id="quartos" name="quartos" type="number" defaultValue={imovel?.quartos ?? ''} />
           </Campo>
 
+          <Campo nome="banheiros" rotulo="Banheiros" erro={erros.banheiros}>
+            <input id="banheiros" name="banheiros" type="number" defaultValue={imovel?.banheiros ?? ''} />
+          </Campo>
+
           <Campo nome="vagas" rotulo="Vagas" erro={erros.vagas}>
             <input id="vagas" name="vagas" type="number" defaultValue={imovel?.vagas ?? ''} />
           </Campo>
@@ -175,6 +189,62 @@ export function FormularioImovel({ imovel }: { imovel?: Imovel }) {
             />
           </Campo>
         </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Outras características</legend>
+        <p className="texto-suave">
+          Cômodos ou diferenciais que variam de imóvel para imóvel: suíte, quintal,
+          churrasqueira, piscina... Preencha a quantidade só quando fizer sentido contar (ex.:
+          quantidade 2, descrição &quot;suítes&quot;). Deixe em branco para características sem
+          contagem, como &quot;quintal&quot;.
+        </p>
+
+        {caracteristicas.map((caracteristica) => (
+          <div className="grade linha-item" key={caracteristica.chave}>
+            <label className="campo">
+              Quantidade (opcional)
+              <input
+                name="caracteristicaQuantidade"
+                type="number"
+                min={1}
+                defaultValue={caracteristica.quantidade ?? ''}
+              />
+            </label>
+
+            <label className="campo">
+              Descrição
+              <input
+                name="caracteristicaDescricao"
+                maxLength={80}
+                placeholder="Ex.: suítes, quintal, churrasqueira"
+                defaultValue={caracteristica.descricao}
+              />
+            </label>
+
+            <button
+              type="button"
+              className="botao botao-texto"
+              onClick={() =>
+                setCaracteristicas((atuais) =>
+                  atuais.filter((atual) => atual.chave !== caracteristica.chave),
+                )
+              }
+            >
+              Remover
+            </button>
+          </div>
+        ))}
+
+        <button
+          type="button"
+          className="botao"
+          onClick={() =>
+            setCaracteristicas((atuais) => [...atuais, { chave: Date.now() }])
+          }
+        >
+          Adicionar característica
+        </button>
       </fieldset>
 
       <fieldset>

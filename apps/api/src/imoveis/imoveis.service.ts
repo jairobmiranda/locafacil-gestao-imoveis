@@ -8,6 +8,15 @@ import type {
 } from '@locafacil/contracts';
 import { PrismaService } from '../prisma/prisma.service';
 
+const INCLUI_CARACTERISTICAS = {
+  caracteristicas: { orderBy: { ordem: 'asc' } },
+} satisfies Prisma.ImovelInclude;
+
+/// A ordem de entrada e a de exibicao: preserva a sequencia que a pessoa digitou.
+function comOrdem(caracteristicas: CriarImovelDto['caracteristicas']) {
+  return caracteristicas.map((caracteristica, ordem) => ({ ...caracteristica, ordem }));
+}
+
 @Injectable()
 export class ImoveisService {
   constructor(private readonly prisma: PrismaService) {}
@@ -44,7 +53,10 @@ export class ImoveisService {
   }
 
   async buscar(id: string) {
-    const imovel = await this.prisma.imovel.findUnique({ where: { id } });
+    const imovel = await this.prisma.imovel.findUnique({
+      where: { id },
+      include: INCLUI_CARACTERISTICAS,
+    });
 
     if (!imovel) {
       throw new NotFoundException('Imóvel não encontrado');
@@ -54,13 +66,33 @@ export class ImoveisService {
   }
 
   criar(dados: CriarImovelDto) {
-    return this.prisma.imovel.create({ data: dados });
+    const { caracteristicas, ...imovel } = dados;
+
+    return this.prisma.imovel.create({
+      data: { ...imovel, caracteristicas: { create: comOrdem(caracteristicas) } },
+      include: INCLUI_CARACTERISTICAS,
+    });
   }
 
   async atualizar(id: string, dados: AtualizarImovelDto) {
     await this.buscar(id);
 
-    return this.prisma.imovel.update({ where: { id }, data: dados });
+    const { caracteristicas, ...imovel } = dados;
+
+    return this.prisma.$transaction(async (tx) => {
+      if (caracteristicas) {
+        await tx.caracteristicaImovel.deleteMany({ where: { imovelId: id } });
+      }
+
+      return tx.imovel.update({
+        where: { id },
+        data: {
+          ...imovel,
+          caracteristicas: caracteristicas ? { create: comOrdem(caracteristicas) } : undefined,
+        },
+        include: INCLUI_CARACTERISTICAS,
+      });
+    });
   }
 
   async arquivar(id: string) {

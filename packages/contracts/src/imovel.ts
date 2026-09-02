@@ -16,6 +16,13 @@ export const situacaoImovelSchema = z.enum([
 
 export const tipoImovelSchema = z.enum(['APARTAMENTO', 'CASA', 'TERRENO', 'COMERCIAL', 'RURAL']);
 
+/// Comodo ou diferencial que varia de imovel para imovel (suite, quintal, churrasqueira...).
+/// Quantidade fica em branco para caracteristicas sem contagem (ex.: "quintal").
+export const caracteristicaImovelSchema = z.object({
+  descricao: z.string().min(1).max(80),
+  quantidade: z.number().int().positive().optional(),
+});
+
 export const criarImovelSchema = z.object({
   apelido: z.string().min(1).max(80),
   estrategia: estrategiaSchema,
@@ -33,7 +40,9 @@ export const criarImovelSchema = z.object({
   areaTotal: z.number().nonnegative().optional(),
   areaConstruida: z.number().nonnegative().optional(),
   quartos: z.number().int().nonnegative().optional(),
+  banheiros: z.number().int().nonnegative().optional(),
   vagas: z.number().int().nonnegative().optional(),
+  caracteristicas: z.array(caracteristicaImovelSchema).default([]),
   dataAquisicao: z.coerce.date().optional(),
   valorAquisicao: z.number().nonnegative().optional(),
   valorVendaAlvo: z.number().nonnegative().optional(),
@@ -57,3 +66,4 @@ export type ListarImoveisDto = z.infer<typeof listarImoveisSchema>;
 export type Estrategia = z.infer<typeof estrategiaSchema>;
 export type SituacaoImovel = z.infer<typeof situacaoImovelSchema>;
 export type TipoImovel = z.infer<typeof tipoImovelSchema>;
+export type CaracteristicaImovel = z.infer<typeof caracteristicaImovelSchema>;

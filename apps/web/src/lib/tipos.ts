@@ -23,7 +23,9 @@ export type Imovel = {
   areaTotal: number | null;
   areaConstruida: number | null;
   quartos: number | null;
+  banheiros: number | null;
   vagas: number | null;
+  caracteristicas: { id: string; descricao: string; quantidade: number | null }[];
   dataAquisicao: string | null;
   valorAquisicao: number | null;
   dataVenda: string | null;

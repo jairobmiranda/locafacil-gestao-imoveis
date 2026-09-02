@@ -39,9 +39,17 @@ export const CLAUSULAS_OBJETO: Clausula[] = [
         ctx.imovel.quartos
           ? `${inteiroPorExtenso(ctx.imovel.quartos)} ${plural(ctx.imovel.quartos, 'dormitório', 'dormitórios')}`
           : null,
+        ctx.imovel.banheiros
+          ? `${inteiroPorExtenso(ctx.imovel.banheiros)} ${plural(ctx.imovel.banheiros, 'banheiro', 'banheiros')}`
+          : null,
         ctx.imovel.vagas
           ? `${ctx.imovel.vagas === 1 ? 'uma' : inteiroPorExtenso(ctx.imovel.vagas)} ${plural(ctx.imovel.vagas, 'vaga de garagem', 'vagas de garagem')}`
           : null,
+        ...ctx.imovel.caracteristicas.map((caracteristica) =>
+          caracteristica.quantidade && caracteristica.quantidade > 1
+            ? `${caracteristica.quantidade} ${caracteristica.descricao}`
+            : caracteristica.descricao,
+        ),
       ].filter(Boolean) as string[];
 
       if (caracteristicas.length > 0) {

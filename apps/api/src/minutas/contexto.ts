@@ -12,6 +12,11 @@ export type ParteQualificada = {
   participacao: number | null;
 };
 
+export type CaracteristicaImovel = {
+  descricao: string;
+  quantidade: number | null;
+};
+
 export type ContextoImovel = {
   apelido: string;
   tipo: string;
@@ -22,7 +27,9 @@ export type ContextoImovel = {
   inscricaoMunicipal: string | null;
   areaConstruida: number | null;
   quartos: number | null;
+  banheiros: number | null;
   vagas: number | null;
+  caracteristicas: CaracteristicaImovel[];
 };
 
 export type EncargoRecorrente = {

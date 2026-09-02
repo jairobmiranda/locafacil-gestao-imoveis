@@ -408,6 +408,10 @@
 .contrato .assinatura {
   text-align: center;
   break-inside: avoid;
+  /* Espaco em branco reservado para a assinatura manual ou para o carimbo de
+     validacao de uma assinatura eletronica (gov.br e afins) ser posicionado sem
+     sobrepor o nome impresso. */
+  padding-top: 2.8cm;
 }
 
 .contrato .assinatura .linha {
@@ -456,7 +460,7 @@
 .folha {
   max-width: 21cm;
   margin: 0 auto;
-  padding: var(--e6);
+  padding: 30mm 25mm;
   background: var(--superficie);
 }
 
@@ -479,7 +483,7 @@
 
 @page {
   size: A4;
-  margin: 25mm 20mm;
+  margin: 30mm 25mm;
 }
 
 @media print {
@@ -487,6 +491,10 @@
     color-scheme: light;
   }
 
+  /* html tambem precisa ficar branco: numa pagina fragmentada pelo @page, a area
+     apos o fim do conteudo de .folha pode ser pintada com o fundo de html em vez
+     do de body, revelando --fundo (cinza) em vez de branco puro. */
+  html,
   body {
     background: #fff;
     color: #000;

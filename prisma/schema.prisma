@@ -226,6 +226,7 @@ model Imovel {
   areaTotal      Decimal? @map("area_total") @db.Decimal(10, 2)
   areaConstruida Decimal? @map("area_construida") @db.Decimal(10, 2)
   quartos        Int?
+  banheiros      Int?
   vagas          Int?
 
   dataAquisicao  DateTime? @map("data_aquisicao") @db.Date
@@ -242,14 +243,30 @@ model Imovel {
   atualizadoEm DateTime  @updatedAt @map("atualizado_em")
   arquivadoEm  DateTime? @map("arquivado_em")
 
-  lancamentos Lancamento[]
-  contratos   Contrato[]
-  vistorias   Vistoria[]
+  lancamentos     Lancamento[]
+  contratos       Contrato[]
+  vistorias       Vistoria[]
+  caracteristicas CaracteristicaImovel[]
 
   @@index([situacao])
   @@index([estrategia])
   @@index([arquivadoEm])
   @@map("imoveis")
+}
+
+/// Comodo ou diferencial que varia de imovel para imovel (suite, quintal, churrasqueira...).
+/// Quartos, banheiros e vagas ficam em colunas proprias por serem universais e contaveis.
+model CaracteristicaImovel {
+  id         String @id @default(uuid()) @db.Char(36)
+  imovelId   String @map("imovel_id") @db.Char(36)
+  descricao  String @db.VarChar(80)
+  quantidade Int?
+  ordem      Int    @default(0)
+
+  imovel Imovel @relation(fields: [imovelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([imovelId])
+  @@map("caracteristicas_imovel")
 }
 
 /// Cadastro unico para inquilino, fiador, comprador e fornecedor.

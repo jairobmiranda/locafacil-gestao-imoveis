@@ -29,7 +29,12 @@ const contexto: ContextoMinuta = {
     inscricaoMunicipal: null,
     areaConstruida: 78,
     quartos: 3,
+    banheiros: 2,
     vagas: 1,
+    caracteristicas: [
+      { descricao: 'suíte', quantidade: 1 },
+      { descricao: 'quintal', quantidade: null },
+    ],
   },
   finalidade: 'RESIDENCIAL',
   dataInicio: new Date(Date.UTC(2026, 8, 1)),

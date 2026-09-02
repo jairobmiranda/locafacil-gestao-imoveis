@@ -12,7 +12,7 @@ import type { ContextoMinuta, ParteQualificada } from './contexto';
 import { renderizarDocumento, type DocumentoRenderizado } from './documento';
 
 const INCLUI_CONTRATO = {
-  imovel: true,
+  imovel: { include: { caracteristicas: { orderBy: { ordem: 'asc' } } } },
   itens: { where: { ativo: true }, include: { categoria: true } },
   partes: { include: { pessoa: true }, orderBy: { ordem: 'asc' } },
   chavePix: true,
@@ -192,7 +192,12 @@ export class ComposicaoService {
           ? Number(contrato.imovel.areaConstruida)
           : null,
         quartos: contrato.imovel.quartos,
+        banheiros: contrato.imovel.banheiros,
         vagas: contrato.imovel.vagas,
+        caracteristicas: contrato.imovel.caracteristicas.map((caracteristica) => ({
+          descricao: caracteristica.descricao,
+          quantidade: caracteristica.quantidade,
+        })),
       },
       finalidade: contrato.finalidade,
 

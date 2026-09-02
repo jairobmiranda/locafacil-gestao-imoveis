@@ -35,13 +35,28 @@ function extrair(dados: FormData) {
     areaTotal: numeroOuIndefinido(dados.get('areaTotal')),
     areaConstruida: numeroOuIndefinido(dados.get('areaConstruida')),
     quartos: numeroOuIndefinido(dados.get('quartos')),
+    banheiros: numeroOuIndefinido(dados.get('banheiros')),
     vagas: numeroOuIndefinido(dados.get('vagas')),
+    caracteristicas: extrairCaracteristicas(dados),
     dataAquisicao: textoOuIndefinido(dados.get('dataAquisicao')),
     valorAquisicao: numeroOuIndefinido(dados.get('valorAquisicao')),
     valorVendaAlvo: numeroOuIndefinido(dados.get('valorVendaAlvo')),
     aluguelAlvo: numeroOuIndefinido(dados.get('aluguelAlvo')),
     observacoes: textoOuIndefinido(dados.get('observacoes')),
   };
+}
+
+/** Características de comodos/diferenciais chegam como listas paralelas do formulário dinâmico. */
+function extrairCaracteristicas(dados: FormData) {
+  const descricoes = dados.getAll('caracteristicaDescricao').map(String);
+  const quantidades = dados.getAll('caracteristicaQuantidade').map(String);
+
+  return descricoes
+    .map((descricao, indice) => ({
+      descricao: descricao.trim(),
+      quantidade: quantidades[indice] ? Number(quantidades[indice]) : undefined,
+    }))
+    .filter((item) => item.descricao !== '');
 }
 
 function traduzirErro(erro: unknown): EstadoFormulario {

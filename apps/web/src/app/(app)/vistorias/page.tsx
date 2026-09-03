@@ -1,8 +1,6 @@
 import Link from 'next/link';
 import { apiGet } from '@/lib/api';
 import { formatarData, rotular } from '@/lib/formato';
-import type { Paginado } from '@/lib/tipos';
-import { FormularioVistoria, type RoteiroOpcao } from './formulario-vistoria';
 
 type VistoriaLista = {
   id: string;
@@ -13,28 +11,25 @@ type VistoriaLista = {
   imovel: { id: string; apelido: string };
 };
 
-type ImovelOpcao = {
-  id: string;
-  apelido: string;
-  tipo: string;
-  quartos: number | null;
-  vagas: number | null;
-};
-type ContratoOpcao = {
-  id: string;
-  imovelId: string;
-  dataInicio: string;
-  dataFim: string;
-  imovel: { apelido: string };
+// Enum tem valores compostos (CONVITE_ENVIADO, EM_EXECUCAO) que nao batem com as
+// classes de cor existentes so por lowercase, entao o mapeamento e explicito.
+const CLASSE_SITUACAO: Record<string, string> = {
+  RASCUNHO: 'pendente',
+  CONVITE_ENVIADO: 'enviado',
+  EM_EXECUCAO: 'pendente',
+  ENVIADA: 'pendente',
+  APROVADA: 'aceito',
+  RECUSADA: 'recusado',
 };
 
+const EM_ANDAMENTO = new Set(['RASCUNHO', 'CONVITE_ENVIADO', 'EM_EXECUCAO']);
+
 export default async function PaginaVistorias() {
-  const [vistorias, imoveis, contratos, roteiros] = await Promise.all([
-    apiGet<VistoriaLista[]>('/vistorias'),
-    apiGet<Paginado<ImovelOpcao>>('/imoveis', { limite: 100 }),
-    apiGet<Paginado<ContratoOpcao>>('/contratos', { limite: 100 }),
-    apiGet<RoteiroOpcao[]>('/vistorias/roteiros'),
-  ]);
+  const vistorias = await apiGet<VistoriaLista[]>('/vistorias');
+
+  const emAndamento = vistorias.filter((item) => EM_ANDAMENTO.has(item.situacao)).length;
+  const aguardandoAprovacao = vistorias.filter((item) => item.situacao === 'ENVIADA').length;
+  const aprovadas = vistorias.filter((item) => item.situacao === 'APROVADA').length;
 
   return (
     <>
@@ -46,27 +41,35 @@ export default async function PaginaVistorias() {
             laudo.
           </p>
         </div>
+        <Link href="/vistorias/nova" className="botao botao-primario">
+          Nova vistoria
+        </Link>
       </div>
 
-      <section>
-        <div className="cabecalho-secao">
-          <h2>Nova vistoria</h2>
+      <div className="indicadores">
+        <div className="cartao indicador">
+          <span className="texto-suave">Vistorias</span>
+          <strong>{vistorias.length}</strong>
         </div>
-        <FormularioVistoria
-          imoveis={imoveis.itens}
-          roteiros={roteiros}
-          contratos={contratos.itens.map((contrato) => ({
-            id: contrato.id,
-            imovelId: contrato.imovelId,
-            rotulo: `${contrato.imovel.apelido} · ${formatarData(contrato.dataInicio)} a ${formatarData(contrato.dataFim)}`,
-          }))}
-        />
-      </section>
+        <div className="cartao indicador">
+          <span className="texto-suave">Em andamento</span>
+          <strong>{emAndamento}</strong>
+        </div>
+        <div className="cartao indicador">
+          <span className="texto-suave">Aguardando aprovação</span>
+          <strong>{aguardandoAprovacao}</strong>
+        </div>
+        <div className="cartao indicador">
+          <span className="texto-suave">Aprovadas</span>
+          <strong>{aprovadas}</strong>
+        </div>
+      </div>
 
-      <section>
-        <div className="cabecalho-secao">
-          <h2>Em andamento e concluídas</h2>
+      {vistorias.length === 0 ? (
+        <div className="cartao vazio">
+          <p>Nenhuma vistoria criada.</p>
         </div>
+      ) : (
         <div className="cartao">
           <table className="tabela">
             <thead>
@@ -79,13 +82,6 @@ export default async function PaginaVistorias() {
               </tr>
             </thead>
             <tbody>
-              {vistorias.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="texto-suave">
-                    Nenhuma vistoria criada.
-                  </td>
-                </tr>
-              ) : null}
               {vistorias.map((vistoria) => (
                 <tr key={vistoria.id}>
                   <td>
@@ -95,7 +91,9 @@ export default async function PaginaVistorias() {
                   </td>
                   <td data-label="Tipo">{rotular(vistoria.tipo)}</td>
                   <td data-label="Situação">
-                    <span className="etiqueta">{rotular(vistoria.situacao)}</span>
+                    <span className={`etiqueta situacao-${CLASSE_SITUACAO[vistoria.situacao] ?? ''}`}>
+                      {rotular(vistoria.situacao)}
+                    </span>
                   </td>
                   <td data-label="Convite">
                     {vistoria.conviteEmail ?? <span className="texto-suave">não enviado</span>}
@@ -106,7 +104,7 @@ export default async function PaginaVistorias() {
             </tbody>
           </table>
         </div>
-      </section>
+      )}
     </>
   );
 }

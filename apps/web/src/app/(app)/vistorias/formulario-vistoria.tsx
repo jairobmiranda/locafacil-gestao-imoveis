@@ -111,7 +111,7 @@ export function FormularioVistoria({
 
   return (
     <form action={acao} className="cartao formulario">
-      <div className="grade">
+      <div className="grade grade-campos-vistoria">
         <label>
           Imóvel
           <select

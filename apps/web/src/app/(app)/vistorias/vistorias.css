@@ -13,16 +13,23 @@
   border: 1px solid var(--borda);
 }
 
+/* Largura maxima evita cards vazios em telas grandes: sem o teto, um roteiro com
+   poucos ambientes deixa cada card enorme e com um vao morto entre nome e quantidade. */
+.grade-campos-vistoria {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 280px));
+}
+
 .grade-ambientes {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 300px));
   gap: var(--e2);
 }
 
 .ambiente-escolha {
   display: grid;
-  grid-template-columns: 1fr 72px;
+  grid-template-columns: 1fr 64px;
   align-items: center;
+  align-content: start;
   gap: var(--e2);
   padding: var(--e2);
   border: 1px solid var(--borda);

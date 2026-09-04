@@ -7,6 +7,7 @@ import {
 import { createHash, randomUUID } from 'node:crypto';
 import { Prisma } from '@prisma/client';
 import type {
+  AcompanharVistoriaDto,
   CriarVistoriaDto,
   DestinatarioConvite,
   EnviarConviteDto,
@@ -19,6 +20,7 @@ import type {
 import { ArmazenamentoService } from '../anexos/armazenamento.service';
 import { somarDias } from '../comum/datas';
 import { PrismaService } from '../prisma/prisma.service';
+import { AvisoVistoriaService, type MomentoAviso } from './aviso-vistoria.service';
 import { materializar, roteiroPara, roteirosDisponiveis } from './roteiros';
 
 const INCLUI_EXECUCAO = {
@@ -85,6 +87,7 @@ export class VistoriasService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly armazenamento: ArmazenamentoService,
+    private readonly aviso: AvisoVistoriaService,
   ) {}
 
   async criar(dados: CriarVistoriaDto) {
@@ -270,6 +273,58 @@ export class VistoriasService {
     );
   }
 
+  /** Guarda quem acompanha esta vistoria e em que momento quer ser avisado. */
+  async salvarAcompanhamento(id: string, dados: AcompanharVistoriaDto) {
+    await this.buscar(id);
+
+    const emails = AvisoVistoriaService.separar(dados.emails.join(';'));
+
+    return this.prisma.vistoria.update({
+      where: { id },
+      data: {
+        avisarEmails: emails.length ? emails.join(';') : null,
+        avisarInicio: dados.avisarInicio && emails.length > 0,
+        avisarConclusao: dados.avisarConclusao && emails.length > 0,
+      },
+      select: { id: true, avisarEmails: true, avisarInicio: true, avisarConclusao: true },
+    });
+  }
+
+  /**
+   * Carimba o aviso antes de mandar o e-mail. O `updateMany` com o carimbo nulo no filtro
+   * e a trava: duas fotos subindo juntas nao geram dois avisos.
+   */
+  private async dispararAviso(vistoriaId: string, momento: MomentoAviso): Promise<void> {
+    const campoCarimbo = momento === 'INICIO' ? 'avisoInicioEm' : 'avisoConclusaoEm';
+    const campoOpcao = momento === 'INICIO' ? 'avisarInicio' : 'avisarConclusao';
+
+    const marcada = await this.prisma.vistoria.updateMany({
+      where: { id: vistoriaId, [campoOpcao]: true, [campoCarimbo]: null },
+      data: { [campoCarimbo]: new Date() },
+    });
+
+    if (marcada.count === 0) {
+      return;
+    }
+
+    const vistoria = await this.prisma.vistoria.findUnique({
+      where: { id: vistoriaId },
+      select: { tipo: true, avisarEmails: true, imovel: { select: { apelido: true } } },
+    });
+
+    if (!vistoria) {
+      return;
+    }
+
+    await this.aviso.avisar({
+      momento,
+      vistoriaId,
+      emails: AvisoVistoriaService.separar(vistoria.avisarEmails),
+      tipo: vistoria.tipo,
+      imovel: vistoria.imovel.apelido,
+    });
+  }
+
   async aprovar(id: string) {
     const vistoria = await this.buscar(id);
 
@@ -288,7 +343,13 @@ export class VistoriasService {
 
     return this.prisma.vistoria.update({
       where: { id },
-      data: { situacao: 'RECUSADA', recusadaEm: new Date(), motivoRecusa: motivo },
+      // Vai ser concluida de novo: o carimbo do aviso volta a zero para o alerta repetir.
+      data: {
+        situacao: 'RECUSADA',
+        recusadaEm: new Date(),
+        motivoRecusa: motivo,
+        avisoConclusaoEm: null,
+      },
     });
   }
 
@@ -387,7 +448,7 @@ export class VistoriasService {
     await this.armazenamento.enviar(chaveObjeto, arquivo.buffer, tipoReal);
     await this.marcarEmExecucao(vistoria);
 
-    return this.prisma.vistoriaFoto.create({
+    const registrada = await this.prisma.vistoriaFoto.create({
       data: {
         itemId,
         bucket: this.armazenamento.bucket,
@@ -405,6 +466,13 @@ export class VistoriasService {
       },
       select: { id: true, ordem: true, recebidaEm: true, hashSha256: true },
     });
+
+    // Vistoria "iniciada" e a primeira foto gravada, nao o primeiro item respondido.
+    if (total === 0) {
+      await this.dispararAviso(vistoriaId, 'INICIO');
+    }
+
+    return registrada;
   }
 
   async removerFoto(vistoriaId: string, fotoId: string): Promise<void> {
@@ -451,11 +519,15 @@ export class VistoriasService {
       });
     }
 
-    return this.prisma.vistoria.update({
+    const concluida = await this.prisma.vistoria.update({
       where: { id: vistoriaId },
       data: { situacao: 'ENVIADA', enviadaEm: new Date() },
       select: { id: true, situacao: true, enviadaEm: true },
     });
+
+    await this.dispararAviso(vistoriaId, 'CONCLUSAO');
+
+    return concluida;
   }
 
   /** Projecao enxuta do link publico: nunca devolve dados do contrato ou das partes. */

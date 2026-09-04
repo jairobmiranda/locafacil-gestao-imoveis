@@ -6,7 +6,7 @@ import { ENVIADOR_EMAIL, type EnviadorEmail } from '../email/enviador-email';
 
 export const PROPOSITO_VISTORIA = 'vistoria';
 
-const TIPO_TEXTO: Record<string, string> = {
+export const TIPO_TEXTO: Record<string, string> = {
   ENTRADA: 'vistoria de entrada',
   SAIDA: 'vistoria de saída',
   PERIODICA: 'vistoria periódica',

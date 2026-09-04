@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { apiPost, ErroApi } from '@/lib/api';
+import { apiPost, apiPut, ErroApi } from '@/lib/api';
 
 export type EstadoVistoria = { erro?: string; sucesso?: string };
 
@@ -105,6 +105,37 @@ export async function enviarConvite(
       copias.length > 0
         ? `Convite enviado para ${email}, com cópia para ${copias.join(', ')}`
         : `Convite enviado para ${email}`,
+  };
+}
+
+export async function salvarAcompanhamento(
+  vistoriaId: string,
+  _anterior: EstadoVistoria,
+  dados: FormData,
+): Promise<EstadoVistoria> {
+  const emails = dados.getAll('avisarEmails').map((valor) => String(valor).trim()).filter(Boolean);
+  const avisarInicio = dados.get('avisarInicio') === 'on';
+  const avisarConclusao = dados.get('avisarConclusao') === 'on';
+
+  if ((avisarInicio || avisarConclusao) && emails.length === 0) {
+    return { erro: 'Escolha ao menos um e-mail para receber os avisos' };
+  }
+
+  try {
+    await apiPut(`/vistorias/${vistoriaId}/acompanhamento`, {
+      emails,
+      avisarInicio,
+      avisarConclusao,
+    });
+  } catch (erro) {
+    return traduzir(erro);
+  }
+
+  revalidatePath(`/vistorias/${vistoriaId}`);
+
+  return {
+    sucesso:
+      avisarInicio || avisarConclusao ? 'Avisos salvos' : 'Avisos desligados para esta vistoria',
   };
 }
 

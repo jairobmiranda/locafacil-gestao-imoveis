@@ -72,6 +72,13 @@
   color: var(--texto-suave);
 }
 
+/* Marca o ambiente que prende a conclusao, sem competir com o nome. */
+.marca-obrigatorio {
+  margin-left: 2px;
+  color: var(--primaria);
+  font-weight: 700;
+}
+
 .item-cartao {
   display: grid;
   gap: var(--e3);

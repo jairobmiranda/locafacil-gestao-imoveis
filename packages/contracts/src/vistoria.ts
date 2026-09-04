@@ -70,6 +70,18 @@ export type DestinatarioConvite = {
   principal: boolean;
 };
 
+/** Avisos internos do acompanhamento: quem recebe e em que momento. */
+export const acompanharVistoriaSchema = z
+  .object({
+    emails: z.array(z.string().email().max(150)).max(10),
+    avisarInicio: z.boolean(),
+    avisarConclusao: z.boolean(),
+  })
+  .refine((dados) => dados.emails.length > 0 || (!dados.avisarInicio && !dados.avisarConclusao), {
+    message: 'Escolha ao menos um e-mail para receber os avisos',
+    path: ['emails'],
+  });
+
 export const responderItemSchema = z.object({
   estado: estadoItemVistoriaSchema.nullish(),
   observacao: z.string().max(1000).nullish(),
@@ -101,6 +113,7 @@ export type EstadoItemVistoria = z.infer<typeof estadoItemVistoriaSchema>;
 export type CriarVistoriaDto = z.infer<typeof criarVistoriaSchema>;
 export type AmbienteSelecionadoDto = z.infer<typeof ambienteSelecionadoSchema>;
 export type EnviarConviteDto = z.infer<typeof enviarConviteSchema>;
+export type AcompanharVistoriaDto = z.infer<typeof acompanharVistoriaSchema>;
 export type ResponderItemDto = z.infer<typeof responderItemSchema>;
 export type MetadadosFotoDto = z.infer<typeof metadadosFotoSchema>;
 export type RecusarVistoriaDto = z.infer<typeof recusarVistoriaSchema>;

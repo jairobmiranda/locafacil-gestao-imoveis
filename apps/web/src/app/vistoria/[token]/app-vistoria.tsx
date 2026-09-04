@@ -28,6 +28,32 @@ const itemCompleto = (item: VistoriaItemPublico, extras: number): boolean =>
   item.estado === 'NAO_APLICAVEL' ||
   (item.estado !== null && item.fotos.length + extras >= item.minimoFotos);
 
+/** So o obrigatorio entra no progresso: contar opcional junto fazia a barra nascer quase cheia. */
+function contar(itens: VistoriaItemPublico[], extras: Map<string, number>) {
+  const obrigatorios = itens.filter((item) => !itemOpcional(item));
+
+  return {
+    obrigatorios: obrigatorios.length,
+    prontos: obrigatorios.filter((item) => itemCompleto(item, extras.get(item.id) ?? 0)).length,
+    opcionais: itens.length - obrigatorios.length,
+  };
+}
+
+/** "2 de 5 obrigatorios . 7 opcionais", sem a metade que o ambiente nao tem. */
+function textoContagem(numeros: ReturnType<typeof contar>): string {
+  const partes = [];
+
+  if (numeros.obrigatorios > 0) {
+    partes.push(`${numeros.prontos} de ${numeros.obrigatorios} obrigatórios`);
+  }
+
+  if (numeros.opcionais > 0) {
+    partes.push(`${numeros.opcionais} opcionais`);
+  }
+
+  return partes.join(' · ') || 'sem itens';
+}
+
 export function AppVistoria({ token, inicial }: { token: string; inicial: VistoriaPublica }) {
   const [vistoria, setVistoria] = useState(inicial);
   const [tela, setTela] = useState<Tela>({ nome: 'ambientes' });
@@ -57,14 +83,10 @@ export function AppVistoria({ token, inicial }: { token: string; inicial: Vistor
     return mapa;
   }, [fila]);
 
-  const progresso = useMemo(() => {
-    const itens = vistoria.ambientes.flatMap((ambiente) => ambiente.itens);
-    const prontos = itens.filter((item) =>
-      itemCompleto(item, extrasPorItem.get(item.id) ?? 0),
-    ).length;
-
-    return { prontos, total: itens.length };
-  }, [vistoria, extrasPorItem]);
+  const progresso = useMemo(
+    () => contar(vistoria.ambientes.flatMap((ambiente) => ambiente.itens), extrasPorItem),
+    [vistoria, extrasPorItem],
+  );
 
   const pendencias = useMemo(
     () =>
@@ -157,15 +179,17 @@ export function AppVistoria({ token, inicial }: { token: string; inicial: Vistor
       <div className="vistoria-topo">
         <div className="rotulo">
           <strong>{ambienteAtual ? ambienteAtual.nome : vistoria.imovel.apelido}</strong>
-          <span className="texto-suave">
-            {' '}
-            · {progresso.prontos} de {progresso.total} itens
-          </span>
+          <span className="texto-suave"> · {textoContagem(progresso)}</span>
         </div>
         <div className="trilha">
           <div
             className="preenchido"
-            style={{ width: `${(progresso.prontos / Math.max(1, progresso.total)) * 100}%` }}
+            style={{
+              width:
+                progresso.obrigatorios === 0
+                  ? '100%'
+                  : `${(progresso.prontos / progresso.obrigatorios) * 100}%`,
+            }}
           />
         </div>
       </div>
@@ -186,26 +210,35 @@ export function AppVistoria({ token, inicial }: { token: string; inicial: Vistor
                 Percorra os ambientes e registre o estado de cada item. Tudo é salvo conforme você
                 avança.
               </p>
+              {progresso.obrigatorios > 0 ? (
+                <p className="texto-suave">
+                  <span className="marca-obrigatorio">*</span> possui item obrigatório. Só os
+                  obrigatórios prendem a conclusão; os opcionais você preenche se fizer sentido.
+                </p>
+              ) : null}
             </div>
 
             {vistoria.ambientes.map((ambiente) => {
-              const prontos = ambiente.itens.filter((item) =>
-                itemCompleto(item, extrasPorItem.get(item.id) ?? 0),
-              ).length;
+              const numeros = contar(ambiente.itens, extrasPorItem);
 
               return (
                 <button
                   type="button"
                   key={ambiente.id}
                   className="ambiente-cartao"
-                  data-completo={prontos === ambiente.itens.length}
+                  data-completo={numeros.prontos === numeros.obrigatorios}
                   onClick={() => setTela({ nome: 'itens', ambienteId: ambiente.id })}
                 >
                   <span className="rotulo">
-                    <span className="nome">{ambiente.nome}</span>
-                    <span className="contagem">
-                      {prontos} de {ambiente.itens.length} itens
+                    <span className="nome">
+                      {ambiente.nome}
+                      {numeros.obrigatorios > 0 ? (
+                        <span className="marca-obrigatorio" title="Possui item obrigatório">
+                          *
+                        </span>
+                      ) : null}
                     </span>
+                    <span className="contagem">{textoContagem(numeros)}</span>
                   </span>
                   <span aria-hidden="true">›</span>
                 </button>
@@ -240,7 +273,7 @@ export function AppVistoria({ token, inicial }: { token: string; inicial: Vistor
 
         {tela.nome === 'ambientes' && pendencias.length > 0 ? (
           <div>
-            <strong>Ainda falta</strong>
+            <strong>Ainda falta (obrigatórios)</strong>
             <ul className="pendencias">
               {pendencias.slice(0, 8).map((pendencia) => (
                 <li key={pendencia.texto}>
@@ -253,7 +286,9 @@ export function AppVistoria({ token, inicial }: { token: string; inicial: Vistor
                   </button>
                 </li>
               ))}
-              {pendencias.length > 8 ? <li>e mais {pendencias.length - 8} itens</li> : null}
+              {pendencias.length > 8 ? (
+                <li>e mais {pendencias.length - 8} obrigatórios</li>
+              ) : null}
             </ul>
           </div>
         ) : null}
@@ -293,7 +328,7 @@ export function AppVistoria({ token, inicial }: { token: string; inicial: Vistor
             {concluindo
               ? 'Enviando...'
               : pendencias.length > 0
-                ? `Faltam ${pendencias.length} itens`
+                ? `Faltam ${pendencias.length} obrigatórios`
                 : 'Concluir vistoria'}
           </button>
         </div>

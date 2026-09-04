@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Put,
   Query,
   Res,
   StreamableFile,
@@ -16,11 +17,13 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 import {
+  acompanharVistoriaSchema,
   criarVistoriaSchema,
   enviarConviteSchema,
   listarVistoriasSchema,
   recusarVistoriaSchema,
   responderItemSchema,
+  type AcompanharVistoriaDto,
   type CriarVistoriaDto,
   type EnviarConviteDto,
   type ListarVistoriasDto,
@@ -96,6 +99,15 @@ export class VistoriasController {
     });
 
     return vistoria;
+  }
+
+  @Put(':id/acompanhamento')
+  @ApiOperation({ summary: 'Define quem é avisado no início e na conclusão da vistoria' })
+  acompanhar(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(new ZodValidationPipe(acompanharVistoriaSchema)) dados: AcompanharVistoriaDto,
+  ) {
+    return this.vistorias.salvarAcompanhamento(id, dados);
   }
 
   @Patch(':id/itens/:itemId')

@@ -91,6 +91,8 @@ export function FormularioVistoria({
   const [imovelId, setImovelId] = useState('');
   const [roteiroChave, setRoteiroChave] = useState('');
   const [selecao, setSelecao] = useState<Record<string, Escolha>>({});
+  // O painel de itens nasce aberto; aqui ficam so os ambientes que a pessoa recolheu na mao.
+  const [recolhidos, setRecolhidos] = useState<string[]>([]);
 
   const imovel = imoveis.find((item) => item.id === imovelId);
 
@@ -110,6 +112,7 @@ export function FormularioVistoria({
 
     setImovelId(novoId);
     setSelecao(novoRoteiro ? selecaoPadrao(novoRoteiro) : {});
+    setRecolhidos([]);
   }
 
   function trocarRoteiro(novaChave: string) {
@@ -119,6 +122,7 @@ export function FormularioVistoria({
 
     setRoteiroChave(novaChave);
     setSelecao(novoRoteiro ? selecaoPadrao(novoRoteiro) : {});
+    setRecolhidos([]);
   }
 
   function ajustar(chave: string, mudanca: Partial<Escolha>) {
@@ -126,6 +130,11 @@ export function FormularioVistoria({
       ...atual,
       [chave]: { quantidade: 0, rotulos: [], itensOpcionais: [], ...atual[chave], ...mudanca },
     }));
+
+    // Ambiente desmarcado esquece o que estava recolhido: ao voltar, abre de novo.
+    if (mudanca.quantidade === 0) {
+      setRecolhidos((atual) => atual.filter((outra) => outra !== chave));
+    }
   }
 
   const ambientesEscolhidos = (roteiro?.ambientes ?? [])
@@ -268,7 +277,22 @@ export function FormularioVistoria({
                     </div>
                   ) : null}
                   {escolha.quantidade > 0 ? (
-                    <details className="itens-ambiente">
+                    <details
+                      className="itens-ambiente"
+                      open={!recolhidos.includes(ambiente.chave)}
+                      onToggle={(evento) => {
+                        // Lido agora: o updater roda depois do despacho, com currentTarget ja nulo.
+                        const aberto = evento.currentTarget.open;
+
+                        setRecolhidos((atual) =>
+                          aberto
+                            ? atual.filter((outra) => outra !== ambiente.chave)
+                            : atual.includes(ambiente.chave)
+                              ? atual
+                              : [...atual, ambiente.chave],
+                        );
+                      }}
+                    >
                       <summary>
                         Itens obrigatórios ({obrigatorios} de {ambiente.itens.length})
                       </summary>

@@ -1,7 +1,8 @@
-import type { DestinatarioConvite } from '@locafacil/contracts';
+import type { DestinatarioConvite, UsuarioAutenticado } from '@locafacil/contracts';
 import { apiGet } from '@/lib/api';
 import { formatarData, rotular } from '@/lib/formato';
 import { AcoesVistoria } from './acoes-vistoria';
+import { AcompanhamentoVistoria, type ObservadorOpcao } from './acompanhamento-vistoria';
 import '../vistorias.css';
 
 const VALIDADE_PADRAO = 15;
@@ -35,6 +36,11 @@ type VistoriaDetalhe = {
   link: string;
   pendencias: { ambiente: string; item: string }[];
   destinatarios: DestinatarioConvite[];
+  avisarEmails: string | null;
+  avisarInicio: boolean;
+  avisarConclusao: boolean;
+  avisoInicioEm: string | null;
+  avisoConclusaoEm: string | null;
   imovel: { id: string; apelido: string };
   ambientes: {
     id: string;
@@ -50,9 +56,35 @@ type VistoriaDetalhe = {
   }[];
 };
 
+/** Quem acompanha e interno: quem está logado e o proprietário, nunca quem executa. */
+function observadores(
+  usuario: UsuarioAutenticado,
+  destinatarios: DestinatarioConvite[],
+): ObservadorOpcao[] {
+  const lista: ObservadorOpcao[] = [
+    { email: usuario.email, nome: usuario.nome, papel: 'você' },
+    ...destinatarios
+      .filter((pessoa) => pessoa.papel === 'LOCADOR')
+      .map((pessoa) => ({
+        email: pessoa.email,
+        nome: pessoa.nome ?? pessoa.email,
+        papel: 'proprietário',
+      })),
+  ];
+
+  return lista.filter(
+    (pessoa, indice) =>
+      lista.findIndex((outro) => outro.email.toLowerCase() === pessoa.email.toLowerCase()) ===
+      indice,
+  );
+}
+
 export default async function PaginaVistoria({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const vistoria = await apiGet<VistoriaDetalhe>(`/vistorias/${id}`);
+  const [vistoria, usuario] = await Promise.all([
+    apiGet<VistoriaDetalhe>(`/vistorias/${id}`),
+    apiGet<UsuarioAutenticado>('/auth/eu'),
+  ]);
 
   const totalItens = vistoria.ambientes.reduce((soma, ambiente) => soma + ambiente.itens.length, 0);
   const totalFotos = vistoria.ambientes.reduce(
@@ -107,6 +139,16 @@ export default async function PaginaVistoria({ params }: { params: Promise<{ id:
           vistoria.conviteExpiraEm,
         )}
         pendencias={vistoria.pendencias.length}
+      />
+
+      <AcompanhamentoVistoria
+        id={vistoria.id}
+        observadores={observadores(usuario, vistoria.destinatarios)}
+        avisarInicio={vistoria.avisarInicio}
+        avisarConclusao={vistoria.avisarConclusao}
+        emailsSalvos={(vistoria.avisarEmails ?? '').split(';').filter(Boolean)}
+        avisoInicioEm={vistoria.avisoInicioEm}
+        avisoConclusaoEm={vistoria.avisoConclusaoEm}
       />
 
       {vistoria.laudoAnexoId ? (

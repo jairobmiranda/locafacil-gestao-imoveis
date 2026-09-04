@@ -573,6 +573,15 @@ model Vistoria {
   recusadaEm DateTime? @map("recusada_em")
   motivoRecusa String? @map("motivo_recusa") @db.VarChar(500)
 
+  /// Quem acompanha esta vistoria por e-mail. Separados por ponto e virgula.
+  avisarEmails    String? @map("avisar_emails") @db.VarChar(500)
+  avisarInicio    Boolean @default(false) @map("avisar_inicio")
+  avisarConclusao Boolean @default(false) @map("avisar_conclusao")
+
+  /// Carimbo de envio de cada aviso. Serve de trava: cada um sai uma vez so.
+  avisoInicioEm    DateTime? @map("aviso_inicio_em")
+  avisoConclusaoEm DateTime? @map("aviso_conclusao_em")
+
   observacoes String? @db.Text
 
   laudoAnexoId String? @map("laudo_anexo_id") @db.Char(36)

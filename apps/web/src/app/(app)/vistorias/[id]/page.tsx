@@ -28,8 +28,11 @@ type VistoriaDetalhe = {
   roteiroChave: string;
   roteiroVersao: number;
   conviteEmail: string | null;
+  conviteCopias: string | null;
   conviteEnviadoEm: string | null;
   conviteExpiraEm: string | null;
+  motivoRecusa: string | null;
+  recusadaEm: string | null;
   enviadaEm: string | null;
   aprovadaEm: string | null;
   laudoAnexoId: string | null;
@@ -131,6 +134,7 @@ export default async function PaginaVistoria({ params }: { params: Promise<{ id:
 
       <AcoesVistoria
         id={vistoria.id}
+        imovel={vistoria.imovel.apelido}
         situacao={vistoria.situacao}
         link={vistoria.link}
         destinatarios={vistoria.destinatarios}
@@ -150,6 +154,24 @@ export default async function PaginaVistoria({ params }: { params: Promise<{ id:
         avisoInicioEm={vistoria.avisoInicioEm}
         avisoConclusaoEm={vistoria.avisoConclusaoEm}
       />
+
+      {vistoria.situacao === 'RECUSADA' && vistoria.motivoRecusa ? (
+        <div className="cartao">
+          <h2>Complemento pedido</h2>
+          <p className="texto-suave">
+            {formatarData(vistoria.recusadaEm)} ·{' '}
+            {vistoria.conviteEmail
+              ? `avisado por e-mail: ${[vistoria.conviteEmail, ...(vistoria.conviteCopias ?? '').split(';').filter(Boolean)].join(', ')}`
+              : 'sem convite enviado ainda: o pedido sai junto com o primeiro convite'}
+            . Quem executou também vê este texto ao reabrir o link.
+          </p>
+          {/* HTML sanitizado na API: whitelist de tags, sem atributo nenhum. */}
+          <div
+            className="texto-formatado"
+            dangerouslySetInnerHTML={{ __html: vistoria.motivoRecusa }}
+          />
+        </div>
+      ) : null}
 
       {vistoria.laudoAnexoId ? (
         <div className="cartao">

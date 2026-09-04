@@ -96,6 +96,8 @@ export class VistoriasController {
       tipo: vistoria.tipo,
       imovel: completa.imovel.apelido,
       expiraEm: vistoria.conviteExpiraEm ?? new Date(),
+      // Convite disparado com complemento em aberto ja leva o pedido junto, num e-mail so.
+      motivoComplemento: completa.situacao === 'RECUSADA' ? completa.motivoRecusa : null,
     });
 
     return vistoria;
@@ -140,11 +142,28 @@ export class VistoriasController {
   @Post(':id/recusar')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Recusa a vistoria e devolve para complemento' })
-  recusar(
+  async recusar(
     @Param('id', ParseUUIDPipe) id: string,
     @Body(new ZodValidationPipe(recusarVistoriaSchema)) dados: RecusarVistoriaDto,
   ) {
-    return this.vistorias.recusar(id, dados.motivo);
+    const vistoria = await this.vistorias.recusar(id, dados.motivo);
+    const destinos = VistoriasService.destinosDoConvite(vistoria);
+
+    // Sem convite enviado nao ha para quem devolver: a recusa fica registrada e o e-mail sai
+    // junto com o primeiro convite.
+    if (destinos) {
+      await this.convite.enviar({
+        vistoriaId: id,
+        email: destinos.email,
+        copias: destinos.copias,
+        tipo: vistoria.tipo,
+        imovel: (await this.vistorias.buscar(id)).imovel.apelido,
+        expiraEm: vistoria.conviteExpiraEm ?? new Date(),
+        motivoComplemento: vistoria.motivoRecusa,
+      });
+    }
+
+    return { ...vistoria, avisado: Boolean(destinos) };
   }
 
   @Post(':id/laudo')

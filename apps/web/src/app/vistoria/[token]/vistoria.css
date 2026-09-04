@@ -262,3 +262,19 @@
   max-width: 480px;
   margin: 0 auto;
 }
+
+/* Recado da gestao ao pedir complemento. Fica no topo da lista de ambientes. */
+.aviso-complemento {
+  display: grid;
+  gap: var(--e2);
+  padding: var(--e4);
+  border: 1px solid var(--alerta-borda);
+  border-left-width: 3px;
+  border-radius: var(--raio);
+  background: var(--alerta-suave);
+}
+
+.aviso-complemento > strong {
+  color: var(--alerta);
+  font-size: 0.9rem;
+}

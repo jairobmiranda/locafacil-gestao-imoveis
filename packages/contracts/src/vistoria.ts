@@ -97,9 +97,13 @@ export const metadadosFotoSchema = z.object({
   legenda: z.string().max(200).optional(),
 });
 
+/** Texto rico do "pedir complemento". A API sanitiza a marcacao antes de gravar. */
 export const recusarVistoriaSchema = z.object({
-  motivo: z.string().min(1).max(500),
+  motivo: z.string().min(1).max(4000),
 });
+
+/** Marcacao aceita no motivo. O editor do painel so produz isto. */
+export const TAGS_MOTIVO = ['strong', 'em', 'u', 'p', 'br', 'ul', 'ol', 'li'] as const;
 
 export const listarVistoriasSchema = z.object({
   imovelId: z.string().uuid().optional(),
@@ -149,5 +153,7 @@ export type VistoriaPublica = {
   tipo: TipoVistoria;
   situacao: SituacaoVistoria;
   imovel: { apelido: string; endereco: string };
+  /** HTML ja sanitizado do ultimo "pedir complemento", para quem vai refazer saber o que falta. */
+  motivoRecusa: string | null;
   ambientes: VistoriaAmbientePublico[];
 };

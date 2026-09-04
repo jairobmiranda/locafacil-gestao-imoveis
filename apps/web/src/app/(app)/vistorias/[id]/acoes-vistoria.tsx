@@ -10,6 +10,7 @@ import {
   recusarVistoria,
   type EstadoVistoria,
 } from '../acoes';
+import { JanelaComplemento } from './janela-complemento';
 
 const ROTULO_PAPEL: Record<DestinatarioConvite['papel'], string> = {
   CONVITE_ANTERIOR: 'convite anterior',
@@ -25,6 +26,7 @@ const ROTULO_PAPEL: Record<DestinatarioConvite['papel'], string> = {
 
 export function AcoesVistoria({
   id,
+  imovel,
   situacao,
   link,
   destinatarios,
@@ -32,6 +34,7 @@ export function AcoesVistoria({
   pendencias,
 }: {
   id: string;
+  imovel: string;
   situacao: string;
   link: string;
   destinatarios: DestinatarioConvite[];
@@ -41,6 +44,7 @@ export function AcoesVistoria({
   const router = useRouter();
   const [processando, iniciar] = useTransition();
   const [copiado, setCopiado] = useState(false);
+  const [pedindoComplemento, setPedindoComplemento] = useState(false);
 
   // A acao do form reseta os campos nao controlados: validade e escolhas ficam no estado.
   const [validadeDias, setValidadeDias] = useState(String(validadeSugerida));
@@ -72,7 +76,9 @@ export function AcoesVistoria({
     <div className="cartao formulario">
       <h2>Convite</h2>
       <p className="texto-suave">
-        O envio é manual: você decide a hora. O link abre sem login e funciona melhor no celular.
+        {situacao === 'RECUSADA'
+          ? 'Há um complemento em aberto: o convite enviado agora leva o pedido junto e renova o prazo do link.'
+          : 'O envio é manual: você decide a hora. O link abre sem login e funciona melhor no celular.'}
       </p>
 
       <form action={acaoConvite} className="formulario">
@@ -136,7 +142,11 @@ export function AcoesVistoria({
             className="botao botao-primario"
             disabled={enviandoConvite || !temDestino}
           >
-            {enviandoConvite ? 'Enviando...' : 'Enviar convite'}
+            {enviandoConvite
+              ? 'Enviando...'
+              : situacao === 'RECUSADA'
+                ? 'Enviar convite com o complemento'
+                : 'Enviar convite'}
           </button>
         </div>
 
@@ -168,13 +178,7 @@ export function AcoesVistoria({
                 type="button"
                 className="botao"
                 disabled={processando}
-                onClick={() => {
-                  const motivo = prompt('O que precisa ser refeito?');
-
-                  if (motivo) {
-                    executar(() => recusarVistoria(id, motivo));
-                  }
-                }}
+                onClick={() => setPedindoComplemento(true)}
               >
                 Pedir complemento
               </button>
@@ -198,6 +202,20 @@ export function AcoesVistoria({
             {processando ? 'Gerando...' : 'Gerar laudo em PDF'}
           </button>
         </div>
+      ) : null}
+
+      {pedindoComplemento ? (
+        <JanelaComplemento
+          ambiente={imovel}
+          processando={processando}
+          aoFechar={() => setPedindoComplemento(false)}
+          aoConfirmar={(motivo) =>
+            executar(async () => {
+              await recusarVistoria(id, motivo);
+              setPedindoComplemento(false);
+            })
+          }
+        />
       ) : null}
     </div>
   );

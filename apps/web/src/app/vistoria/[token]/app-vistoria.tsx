@@ -210,6 +210,17 @@ export function AppVistoria({ token, inicial }: { token: string; inicial: Vistor
                 Percorra os ambientes e registre o estado de cada item. Tudo é salvo conforme você
                 avança.
               </p>
+              {vistoria.motivoRecusa ? (
+                <div className="aviso-complemento">
+                  <strong>A gestão pediu um complemento</strong>
+                  {/* HTML sanitizado na API: whitelist de tags, sem atributo nenhum. */}
+                  <div
+                    className="texto-formatado"
+                    dangerouslySetInnerHTML={{ __html: vistoria.motivoRecusa }}
+                  />
+                </div>
+              ) : null}
+
               {progresso.obrigatorios > 0 ? (
                 <p className="texto-suave">
                   <span className="marca-obrigatorio">*</span> possui item obrigatório. Só os

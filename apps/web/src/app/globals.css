@@ -1349,6 +1349,165 @@ input[type='file']::file-selector-button {
   background: #ffffff;
 }
 
+.janela-media {
+  width: min(620px, 100%);
+}
+
+.janela-rodape {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--e2);
+  flex-wrap: wrap;
+  padding: var(--e4) var(--e5);
+  border-top: var(--hairline) solid var(--borda);
+  background: var(--superficie-2);
+}
+
+/* ========== Editor de texto rico ========== */
+
+.editor-rico {
+  display: flex;
+  flex-direction: column;
+  border: var(--hairline) solid var(--borda-forte);
+  border-radius: var(--raio);
+  background: var(--superficie-2);
+  overflow: hidden;
+  transition: border-color var(--transicao), box-shadow var(--transicao);
+}
+
+.editor-rico:focus-within {
+  border-color: var(--primaria);
+  box-shadow: 0 0 0 4px var(--anel-foco);
+}
+
+.editor-rico[data-excedeu='true'] {
+  border-color: var(--negativo-borda);
+}
+
+.editor-barra {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 6px;
+  border-bottom: var(--hairline) solid var(--borda);
+  background: var(--superficie-alt);
+}
+
+.editor-botao {
+  font: inherit;
+  font-size: 13px;
+  min-width: 30px;
+  height: 28px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: var(--hairline) solid transparent;
+  border-radius: var(--raio-sm);
+  background: transparent;
+  color: var(--texto-suave);
+  cursor: pointer;
+  transition: background var(--transicao), color var(--transicao), border-color var(--transicao);
+}
+
+.editor-botao.negrito {
+  font-weight: 750;
+}
+
+.editor-botao.italico {
+  font-style: italic;
+}
+
+.editor-botao.sublinhado {
+  text-decoration: underline;
+}
+
+@media (hover: hover) {
+  .editor-botao:hover {
+    background: var(--superficie);
+    color: var(--texto);
+  }
+}
+
+.editor-botao[aria-pressed='true'] {
+  background: var(--primaria-suave);
+  border-color: var(--primaria-borda);
+  color: var(--primaria-texto);
+}
+
+.editor-area {
+  min-height: 150px;
+  max-height: 40vh;
+  overflow-y: auto;
+  padding: var(--e3) var(--e4);
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--texto);
+  background: var(--superficie);
+  outline: none;
+}
+
+/* O contenteditable vazio nao ocupa altura nem mostra dica: o placeholder e nosso. */
+.editor-area:empty::before,
+.editor-area:has(> br:only-child)::before,
+.editor-area:has(> p:only-child:empty)::before,
+.editor-area:has(> p:only-child > br:only-child)::before {
+  content: attr(data-placeholder);
+  color: var(--texto-tenue);
+  pointer-events: none;
+}
+
+.editor-rodape {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e3);
+  padding: 6px var(--e4);
+  border-top: var(--hairline) solid var(--borda);
+  background: var(--superficie-alt);
+  font-size: 12px;
+}
+
+.editor-contador {
+  color: var(--texto-tenue);
+  font-variant-numeric: tabular-nums;
+}
+
+.editor-contador[data-excedeu='true'] {
+  color: var(--negativo);
+  font-weight: 600;
+}
+
+/* ========== Texto rico ja gravado ========== */
+
+.texto-formatado {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--texto);
+}
+
+.texto-formatado > :first-child {
+  margin-top: 0;
+}
+
+.texto-formatado > :last-child {
+  margin-bottom: 0;
+}
+
+.texto-formatado p {
+  margin: 0 0 var(--e2);
+}
+
+.texto-formatado ul,
+.texto-formatado ol {
+  margin: 0 0 var(--e2);
+  padding-left: 1.3em;
+}
+
+.texto-formatado li {
+  margin-bottom: var(--e1);
+}
+
 /* ========== PIX ========== */
 
 .pix {

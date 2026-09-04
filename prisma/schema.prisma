@@ -564,6 +564,8 @@ model Vistoria {
   /// Quem vai executar. Normalmente o proprio locatario.
   responsavelId    String? @map("responsavel_id") @db.Char(36)
   conviteEmail     String? @map("convite_email") @db.VarChar(150)
+  /// Quem entrou em copia no ultimo convite. Separados por ponto e virgula.
+  conviteCopias    String? @map("convite_copias") @db.VarChar(500)
   conviteEnviadoEm DateTime? @map("convite_enviado_em")
   conviteExpiraEm  DateTime? @map("convite_expira_em")
 
@@ -571,7 +573,8 @@ model Vistoria {
   enviadaEm  DateTime? @map("enviada_em")
   aprovadaEm DateTime? @map("aprovada_em")
   recusadaEm DateTime? @map("recusada_em")
-  motivoRecusa String? @map("motivo_recusa") @db.VarChar(500)
+  /// Texto rico do "pedir complemento", ja sanitizado pela API.
+  motivoRecusa String? @map("motivo_recusa") @db.Text
 
   /// Quem acompanha esta vistoria por e-mail. Separados por ponto e virgula.
   avisarEmails    String? @map("avisar_emails") @db.VarChar(500)

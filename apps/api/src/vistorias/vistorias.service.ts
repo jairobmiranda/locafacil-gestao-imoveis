@@ -19,6 +19,7 @@ import type {
 } from '@locafacil/contracts';
 import { ArmazenamentoService } from '../anexos/armazenamento.service';
 import { somarDias } from '../comum/datas';
+import { sanitizarHtmlRico, textoDeHtml } from '../comum/html';
 import { PrismaService } from '../prisma/prisma.service';
 import { AvisoVistoriaService, type MomentoAviso } from './aviso-vistoria.service';
 import { materializar, roteiroPara, roteirosDisponiveis } from './roteiros';
@@ -41,6 +42,7 @@ type VistoriaCompleta = Prisma.VistoriaGetPayload<{ include: typeof INCLUI_EXECU
 const TIPOS_IMAGEM = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const TAMANHO_MAXIMO_FOTO = 6 * 1024 * 1024;
 const MAXIMO_FOTOS_POR_VISTORIA = 400;
+const VALIDADE_PADRAO_DIAS = 15;
 
 /** Quem costuma executar a vistoria aparece primeiro na lista de convite. */
 const ORDEM_PAPEL: Record<PapelDestinatario, number> = {
@@ -80,6 +82,31 @@ function tipoRealDaImagem(conteudo: Buffer): string | null {
   }
 
   return null;
+}
+
+/**
+ * Devolver para complemento com o link vencido nao adianta: `garantirEditavel` barra o acesso.
+ * O prazo volta a contar de hoje, repetindo a janela que o gestor escolheu no convite.
+ */
+function prazoRetomada(vistoria: {
+  conviteEnviadoEm: Date | null;
+  conviteExpiraEm: Date | null;
+}): Date | null {
+  if (!vistoria.conviteExpiraEm) {
+    return null;
+  }
+
+  if (vistoria.conviteExpiraEm > new Date()) {
+    return vistoria.conviteExpiraEm;
+  }
+
+  const janela = vistoria.conviteEnviadoEm
+    ? Math.round(
+        (vistoria.conviteExpiraEm.getTime() - vistoria.conviteEnviadoEm.getTime()) / 86_400_000,
+      )
+    : VALIDADE_PADRAO_DIAS;
+
+  return somarDias(new Date(), janela >= 1 && janela <= 60 ? janela : VALIDADE_PADRAO_DIAS);
 }
 
 @Injectable()
@@ -178,11 +205,27 @@ export class VistoriasService {
       where: { id },
       data: {
         conviteEmail: dados.email,
+        conviteCopias: dados.copias?.length ? dados.copias.join(';') : null,
         conviteEnviadoEm: new Date(),
         conviteExpiraEm: somarDias(new Date(), dados.validadeDias),
         situacao: vistoria.situacao === 'RASCUNHO' ? 'CONVITE_ENVIADO' : vistoria.situacao,
       },
     });
+  }
+
+  /** Quem recebeu o ultimo convite. E para esta lista que o pedido de complemento volta. */
+  static destinosDoConvite(vistoria: {
+    conviteEmail: string | null;
+    conviteCopias: string | null;
+  }): { email: string; copias: string[] } | null {
+    if (!vistoria.conviteEmail) {
+      return null;
+    }
+
+    return {
+      email: vistoria.conviteEmail,
+      copias: AvisoVistoriaService.separar(vistoria.conviteCopias),
+    };
   }
 
   /** E-mails que a tela oferece como destino do convite: partes do contrato, copias e responsavel. */
@@ -339,16 +382,25 @@ export class VistoriasService {
   }
 
   async recusar(id: string, motivo: string) {
-    await this.buscar(id);
+    const vistoria = await this.buscar(id);
+
+    const limpo = sanitizarHtmlRico(motivo);
+
+    // Um campo rico "vazio" ainda chega como `<p><br></p>`: o que vale e o texto que sobra.
+    if (textoDeHtml(limpo) === '') {
+      throw new BadRequestException('Escreva o que precisa ser refeito');
+    }
 
     return this.prisma.vistoria.update({
       where: { id },
-      // Vai ser concluida de novo: o carimbo do aviso volta a zero para o alerta repetir.
+      // Vai ser retomada e concluida de novo: os carimbos zeram para os avisos repetirem.
       data: {
         situacao: 'RECUSADA',
         recusadaEm: new Date(),
-        motivoRecusa: motivo,
+        motivoRecusa: limpo,
+        avisoInicioEm: null,
         avisoConclusaoEm: null,
+        conviteExpiraEm: prazoRetomada(vistoria),
       },
     });
   }
@@ -467,8 +519,8 @@ export class VistoriasService {
       select: { id: true, ordem: true, recebidaEm: true, hashSha256: true },
     });
 
-    // Vistoria "iniciada" e a primeira foto gravada, nao o primeiro item respondido.
-    if (total === 0) {
+    // Primeira foto da rodada: depois de um complemento o carimbo zera e o aviso sai de novo.
+    if (vistoria.avisoInicioEm === null) {
       await this.dispararAviso(vistoriaId, 'INICIO');
     }
 
@@ -538,6 +590,7 @@ export class VistoriasService {
       id: vistoria.id,
       tipo: vistoria.tipo,
       situacao: vistoria.situacao,
+      motivoRecusa: vistoria.situacao === 'RECUSADA' ? vistoria.motivoRecusa : null,
       imovel: {
         apelido: vistoria.imovel.apelido,
         endereco: [

@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
+import Script from 'next/script';
 import './globals.css';
 import { RegistrarServiceWorker } from './registrar-service-worker';
+import { TEMA_STORAGE_KEY } from '@/lib/tema';
 
 export const metadata: Metadata = {
   title: 'LocaFácil',
@@ -29,7 +31,19 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" suppressHydrationWarning>
+      <head>
+        <Script id="tema-inicial" strategy="beforeInteractive">
+          {`(function () {
+            try {
+              var tema = localStorage.getItem(${JSON.stringify(TEMA_STORAGE_KEY)});
+              if (tema === 'claro' || tema === 'escuro') {
+                document.documentElement.setAttribute('data-tema', tema);
+              }
+            } catch (e) {}
+          })();`}
+        </Script>
+      </head>
       <body>
         {children}
         <RegistrarServiceWorker />

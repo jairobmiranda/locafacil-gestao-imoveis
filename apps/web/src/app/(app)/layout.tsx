@@ -4,6 +4,7 @@ import type { UsuarioAutenticado } from '@locafacil/contracts';
 import { apiGet } from '@/lib/api';
 import { sair } from '../login/acoes';
 import { LinkNavegacao } from './link-navegacao';
+import { MenuUsuario } from './menu-usuario';
 import {
   IconeConfiguracoes,
   IconeContratos,
@@ -52,12 +53,9 @@ export default async function LayoutApp({ children }: { children: ReactNode }) {
           ))}
         </nav>
 
-        <form action={sair} className="area-usuario">
-          <span className="texto-suave">{usuario.nome}</span>
-          <button type="submit" className="botao botao-texto">
-            Sair
-          </button>
-        </form>
+        <div className="area-usuario">
+          <MenuUsuario nome={usuario.nome} perfil={usuario.perfil} aoSair={sair} />
+        </div>
       </aside>
 
       <header className="cabecalho">
@@ -73,12 +71,9 @@ export default async function LayoutApp({ children }: { children: ReactNode }) {
           ))}
         </nav>
 
-        <form action={sair} className="area-usuario">
-          <span className="texto-suave">{usuario.nome}</span>
-          <button type="submit" className="botao botao-texto">
-            Sair
-          </button>
-        </form>
+        <div className="area-usuario">
+          <MenuUsuario nome={usuario.nome} perfil={usuario.perfil} aoSair={sair} />
+        </div>
       </header>
 
       <main className="conteudo">{children}</main>

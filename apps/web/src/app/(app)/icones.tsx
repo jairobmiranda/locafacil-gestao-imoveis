@@ -71,6 +71,23 @@ export function IconePessoas(props: Props) {
   );
 }
 
+export function IconeSol(props: Props) {
+  return (
+    <svg {...base} {...props}>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2.75v2.5M12 18.75v2.5M4.4 4.4l1.77 1.77M17.83 17.83l1.77 1.77M2.75 12h2.5M18.75 12h2.5M4.4 19.6l1.77-1.77M17.83 6.17l1.77-1.77" />
+    </svg>
+  );
+}
+
+export function IconeLua(props: Props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M20.5 14.5a8.5 8.5 0 1 1-9-11.9 7 7 0 0 0 9 11.9Z" />
+    </svg>
+  );
+}
+
 export function IconeConfiguracoes(props: Props) {
   return (
     <svg {...base} {...props}>

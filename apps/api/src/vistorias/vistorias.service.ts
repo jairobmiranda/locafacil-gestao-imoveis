@@ -8,9 +8,11 @@ import { createHash, randomUUID } from 'node:crypto';
 import { Prisma } from '@prisma/client';
 import type {
   CriarVistoriaDto,
+  DestinatarioConvite,
   EnviarConviteDto,
   ListarVistoriasDto,
   MetadadosFotoDto,
+  PapelDestinatario,
   ResponderItemDto,
   VistoriaPublica,
 } from '@locafacil/contracts';
@@ -37,6 +39,19 @@ type VistoriaCompleta = Prisma.VistoriaGetPayload<{ include: typeof INCLUI_EXECU
 const TIPOS_IMAGEM = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const TAMANHO_MAXIMO_FOTO = 6 * 1024 * 1024;
 const MAXIMO_FOTOS_POR_VISTORIA = 400;
+
+/** Quem costuma executar a vistoria aparece primeiro na lista de convite. */
+const ORDEM_PAPEL: Record<PapelDestinatario, number> = {
+  CONVITE_ANTERIOR: 0,
+  RESPONSAVEL: 1,
+  LOCATARIO: 2,
+  CONJUGE: 3,
+  FIADOR: 4,
+  LOCADOR: 5,
+  ANUENTE: 6,
+  TESTEMUNHA: 7,
+  COPIA: 8,
+};
 
 type ArquivoRecebido = {
   originalname: string;
@@ -165,6 +180,94 @@ export class VistoriasService {
         situacao: vistoria.situacao === 'RASCUNHO' ? 'CONVITE_ENVIADO' : vistoria.situacao,
       },
     });
+  }
+
+  /** E-mails que a tela oferece como destino do convite: partes do contrato, copias e responsavel. */
+  async destinatariosConvite(id: string): Promise<DestinatarioConvite[]> {
+    const vistoria = await this.prisma.vistoria.findUnique({
+      where: { id },
+      select: {
+        conviteEmail: true,
+        responsavel: { select: { nome: true, email: true } },
+        contrato: {
+          select: {
+            emailsCopia: true,
+            partes: {
+              orderBy: { ordem: 'asc' },
+              select: {
+                papel: true,
+                contatoPrincipal: true,
+                pessoa: { select: { nome: true, email: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!vistoria) {
+      throw new NotFoundException('Vistoria não encontrada');
+    }
+
+    const candidatos: DestinatarioConvite[] = [];
+
+    if (vistoria.conviteEmail) {
+      candidatos.push({
+        email: vistoria.conviteEmail,
+        nome: null,
+        papel: 'CONVITE_ANTERIOR',
+        principal: true,
+      });
+    }
+
+    if (vistoria.responsavel?.email) {
+      candidatos.push({
+        email: vistoria.responsavel.email,
+        nome: vistoria.responsavel.nome,
+        papel: 'RESPONSAVEL',
+        principal: true,
+      });
+    }
+
+    for (const parte of vistoria.contrato?.partes ?? []) {
+      if (parte.pessoa.email) {
+        candidatos.push({
+          email: parte.pessoa.email,
+          nome: parte.pessoa.nome,
+          papel: parte.papel,
+          // Locatario e o executor natural da vistoria; locador principal nao vira destino padrao.
+          principal: parte.contatoPrincipal && parte.papel === 'LOCATARIO',
+        });
+      }
+    }
+
+    // Mesmo separador aceito na cobranca: o cadastro admite ponto e virgula ou virgula.
+    for (const avulso of (vistoria.contrato?.emailsCopia ?? '').split(/[;,]/)) {
+      const email = avulso.trim();
+
+      if (email) {
+        candidatos.push({ email, nome: null, papel: 'COPIA', principal: false });
+      }
+    }
+
+    // O mesmo endereco pode ser parte e copia: fica a primeira ocorrencia, que carrega o nome.
+    const porEmail = new Map<string, DestinatarioConvite>();
+
+    for (const candidato of candidatos) {
+      const chave = candidato.email.trim().toLowerCase();
+      const existente = porEmail.get(chave);
+
+      if (existente) {
+        existente.principal = existente.principal || candidato.principal;
+        existente.nome = existente.nome ?? candidato.nome;
+      } else {
+        porEmail.set(chave, { ...candidato, email: candidato.email.trim() });
+      }
+    }
+
+    return [...porEmail.values()].sort(
+      (um, outro) => ORDEM_PAPEL[um.papel] - ORDEM_PAPEL[outro.papel],
+    );
   }
 
   async aprovar(id: string) {

@@ -43,9 +43,32 @@ export const criarVistoriaSchema = z.object({
 
 export const enviarConviteSchema = z.object({
   email: z.string().email().max(150),
+  /** Quem recebe o mesmo convite em copia. Sai no campo Cc do e-mail. */
+  copias: z.array(z.string().email().max(150)).max(10).optional(),
   /** Prazo de validade do link em dias. */
   validadeDias: z.number().int().min(1).max(60).default(15),
 });
+
+/** Papel da pessoa no contrato, ou COPIA para os enderecos avulsos do cadastro. */
+export type PapelDestinatario =
+  | 'LOCADOR'
+  | 'LOCATARIO'
+  | 'FIADOR'
+  | 'CONJUGE'
+  | 'ANUENTE'
+  | 'TESTEMUNHA'
+  | 'COPIA'
+  | 'RESPONSAVEL'
+  | 'CONVITE_ANTERIOR';
+
+/** Sugestao de destino do convite, montada a partir do contrato vinculado. */
+export type DestinatarioConvite = {
+  email: string;
+  nome: string | null;
+  papel: PapelDestinatario;
+  /** Contato principal do contrato: vem marcado por padrao na tela. */
+  principal: boolean;
+};
 
 export const responderItemSchema = z.object({
   estado: estadoItemVistoriaSchema.nullish(),

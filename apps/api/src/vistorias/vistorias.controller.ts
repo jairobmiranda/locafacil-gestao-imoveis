@@ -63,12 +63,16 @@ export class VistoriasController {
   @Get(':id')
   @ApiOperation({ summary: 'Detalha a vistoria com ambientes, itens e fotos' })
   async buscar(@Param('id', ParseUUIDPipe) id: string) {
-    const vistoria = await this.vistorias.buscar(id);
+    const [vistoria, destinatarios] = await Promise.all([
+      this.vistorias.buscar(id),
+      this.vistorias.destinatariosConvite(id),
+    ]);
 
     return {
       ...vistoria,
       link: this.convite.linkPara(id),
       pendencias: this.vistorias.pendencias(vistoria),
+      destinatarios,
     };
   }
 
@@ -85,6 +89,7 @@ export class VistoriasController {
     await this.convite.enviar({
       vistoriaId: id,
       email: dados.email,
+      copias: dados.copias,
       tipo: vistoria.tipo,
       imovel: completa.imovel.apelido,
       expiraEm: vistoria.conviteExpiraEm ?? new Date(),

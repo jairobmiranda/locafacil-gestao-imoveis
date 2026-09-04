@@ -29,23 +29,53 @@ type Escolha = { quantidade: number; rotulos: string[]; itensOpcionais: string[]
 
 const MAXIMO_COPIAS = 20;
 
-function selecaoPadrao(roteiro: RoteiroOpcao, imovel?: Opcao): Record<string, Escolha> {
+/** Nada vem marcado: quem monta a vistoria escolhe ambiente por ambiente o que existe no imovel. */
+function selecaoPadrao(roteiro: RoteiroOpcao): Record<string, Escolha> {
   const inicial: Record<string, Escolha> = {};
 
   for (const ambiente of roteiro.ambientes) {
-    // Ambiente repetido comeca com o que o cadastro do imovel informa; o resto entra uma vez.
-    const padrao = ambiente.repetirPor ? (imovel?.[ambiente.repetirPor] ?? 0) : 1;
-
     inicial[ambiente.chave] = {
-      quantidade: Math.min(MAXIMO_COPIAS, Math.max(0, padrao)),
+      quantidade: 0,
       rotulos: [],
-      itensOpcionais: ambiente.itens
-        .filter((item) => !item.obrigatorio)
-        .map((item) => item.chave),
+      itensOpcionais: ambiente.itens.map((item) => item.chave),
     };
   }
 
   return inicial;
+}
+
+/** Caixa mestra em tres estados: nenhum, parcial (tracinho) e todos. */
+function SelecionarTodos({
+  total,
+  marcados,
+  aoAlternar,
+}: {
+  total: number;
+  marcados: number;
+  aoAlternar: (marcarTodos: boolean) => void;
+}) {
+  const todos = total > 0 && marcados === total;
+
+  return (
+    <label className="campo-inline selecionar-todos">
+      <input
+        type="checkbox"
+        checked={todos}
+        ref={(elemento) => {
+          if (elemento) {
+            elemento.indeterminate = marcados > 0 && marcados < total;
+          }
+        }}
+        onChange={() => aoAlternar(!todos)}
+      />
+      <span>
+        {todos ? 'Desmarcar todos' : 'Selecionar todos'}
+        <small className="texto-suave">
+          {marcados} de {total} com foto obrigatória
+        </small>
+      </span>
+    </label>
+  );
 }
 
 export function FormularioVistoria({
@@ -79,7 +109,7 @@ export function FormularioVistoria({
       : roteiros.find((item) => novoImovel && item.tiposImovel.includes(novoImovel.tipo));
 
     setImovelId(novoId);
-    setSelecao(novoRoteiro ? selecaoPadrao(novoRoteiro, novoImovel) : {});
+    setSelecao(novoRoteiro ? selecaoPadrao(novoRoteiro) : {});
   }
 
   function trocarRoteiro(novaChave: string) {
@@ -88,7 +118,7 @@ export function FormularioVistoria({
       : roteiros.find((item) => imovel && item.tiposImovel.includes(imovel.tipo));
 
     setRoteiroChave(novaChave);
-    setSelecao(novoRoteiro ? selecaoPadrao(novoRoteiro, imovel) : {});
+    setSelecao(novoRoteiro ? selecaoPadrao(novoRoteiro) : {});
   }
 
   function ajustar(chave: string, mudanca: Partial<Escolha>) {
@@ -173,8 +203,8 @@ export function FormularioVistoria({
         <fieldset>
           <legend>Ambientes ({totalAmbientes})</legend>
           <p className="texto-suave">
-            Deixe em zero o que o imóvel não tem. Com mais de uma cópia dá para nomear cada uma, e
-            item desmarcado aparece na vistoria sem exigir resposta nem foto.
+            Marque só os ambientes que o imóvel tem. Com mais de uma cópia dá para nomear cada uma,
+            e item desmarcado aparece na vistoria sem exigir resposta nem foto.
           </p>
 
           <div className="grade-ambientes">
@@ -182,8 +212,9 @@ export function FormularioVistoria({
               const escolha = selecao[ambiente.chave] ?? {
                 quantidade: 0,
                 rotulos: [],
-                itensOpcionais: [],
+                itensOpcionais: ambiente.itens.map((item) => item.chave),
               };
+              const obrigatorios = ambiente.itens.length - escolha.itensOpcionais.length;
 
               return (
                 <div className="ambiente-escolha" key={ambiente.chave}>
@@ -239,10 +270,19 @@ export function FormularioVistoria({
                   {escolha.quantidade > 0 ? (
                     <details className="itens-ambiente">
                       <summary>
-                        Itens obrigatórios (
-                        {ambiente.itens.length - escolha.itensOpcionais.length} de{' '}
-                        {ambiente.itens.length})
+                        Itens obrigatórios ({obrigatorios} de {ambiente.itens.length})
                       </summary>
+                      <SelecionarTodos
+                        total={ambiente.itens.length}
+                        marcados={obrigatorios}
+                        aoAlternar={(marcarTodos) =>
+                          ajustar(ambiente.chave, {
+                            itensOpcionais: marcarTodos
+                              ? []
+                              : ambiente.itens.map((item) => item.chave),
+                          })
+                        }
+                      />
                       {ambiente.itens.map((item) => (
                         <label className="campo-inline" key={item.chave}>
                           <input

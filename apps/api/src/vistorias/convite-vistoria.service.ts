@@ -30,6 +30,8 @@ export class ConviteVistoriaService {
   async enviar(dados: {
     vistoriaId: string;
     email: string;
+    /** Recebem o mesmo link em copia, ex.: fiador e conjuge do locatario. */
+    copias?: string[];
     tipo: string;
     imovel: string;
     expiraEm: Date;
@@ -38,8 +40,19 @@ export class ConviteVistoriaService {
     const tipo = TIPO_TEXTO[dados.tipo] ?? 'vistoria';
     const prazo = dados.expiraEm.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
 
+    // O destinatario principal nunca se repete no Cc: alguns provedores tratam isso como spam.
+    const copia = (dados.copias ?? [])
+      .map((endereco) => endereco.trim())
+      .filter(
+        (endereco, indice, lista) =>
+          endereco !== '' &&
+          endereco.toLowerCase() !== dados.email.trim().toLowerCase() &&
+          lista.findIndex((outro) => outro.toLowerCase() === endereco.toLowerCase()) === indice,
+      );
+
     await this.enviador.enviar({
       destinatario: dados.email,
+      ...(copia.length ? { copia } : {}),
       assunto: `Vistoria do imóvel ${dados.imovel}`,
       corpoHtml:
         `<p>Olá.</p>` +
@@ -56,6 +69,9 @@ export class ConviteVistoriaService {
         `(o link vale até ${prazo}).`,
     });
 
-    this.logger.log(`Convite de vistoria ${dados.vistoriaId} enviado para ${dados.email}`);
+    this.logger.log(
+      `Convite de vistoria ${dados.vistoriaId} enviado para ${dados.email}` +
+        (copia.length ? ` (cópia: ${copia.join(', ')})` : ''),
+    );
   }
 }

@@ -63,3 +63,57 @@
 .itens-ambiente .campo-inline {
   margin: var(--e1) 0 0;
 }
+
+/* ========== Cartao de convite ========== */
+
+/* Campo nasce com width:100%, o que jogaria e-mail, prazo e botao para linhas separadas.
+   O prazo tem dois digitos: ocupar a largura do cartao so aumenta o vao morto. */
+.campos-convite {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--e2);
+}
+
+.campos-convite .campo-email {
+  flex: 1 1 240px;
+  max-width: 360px;
+}
+
+.campos-convite .campo-link {
+  flex: 1 1 260px;
+  max-width: 520px;
+}
+
+.campos-convite .campo-curto {
+  flex: 0 0 120px;
+}
+
+.campos-convite > .botao {
+  flex: 0 0 auto;
+}
+
+.lista-destinatarios {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 320px));
+  gap: var(--e2);
+}
+
+.destinatario {
+  margin: 0;
+  padding: var(--e2);
+  border: var(--hairline) solid var(--borda);
+  border-radius: var(--raio);
+}
+
+.selecionar-todos {
+  margin: var(--e1) 0 var(--e2);
+  padding-bottom: var(--e1);
+  border-bottom: var(--hairline) dashed var(--borda);
+}
+
+@media (max-width: 480px) {
+  .campos-convite > .botao {
+    flex: 1 1 100%;
+  }
+}

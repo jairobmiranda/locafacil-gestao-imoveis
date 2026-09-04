@@ -1,7 +1,24 @@
+import type { DestinatarioConvite } from '@locafacil/contracts';
 import { apiGet } from '@/lib/api';
 import { formatarData, rotular } from '@/lib/formato';
 import { AcoesVistoria } from './acoes-vistoria';
 import '../vistorias.css';
+
+const VALIDADE_PADRAO = 15;
+const MILISSEGUNDOS_POR_DIA = 86_400_000;
+
+/** O prazo escolhido no ultimo convite nao e guardado: sai da distancia entre as duas datas. */
+function validadeDoUltimoConvite(enviadoEm: string | null, expiraEm: string | null): number {
+  if (!enviadoEm || !expiraEm) {
+    return VALIDADE_PADRAO;
+  }
+
+  const dias = Math.round(
+    (new Date(expiraEm).getTime() - new Date(enviadoEm).getTime()) / MILISSEGUNDOS_POR_DIA,
+  );
+
+  return dias >= 1 && dias <= 60 ? dias : VALIDADE_PADRAO;
+}
 
 type VistoriaDetalhe = {
   id: string;
@@ -17,6 +34,7 @@ type VistoriaDetalhe = {
   laudoAnexoId: string | null;
   link: string;
   pendencias: { ambiente: string; item: string }[];
+  destinatarios: DestinatarioConvite[];
   imovel: { id: string; apelido: string };
   ambientes: {
     id: string;
@@ -83,7 +101,11 @@ export default async function PaginaVistoria({ params }: { params: Promise<{ id:
         id={vistoria.id}
         situacao={vistoria.situacao}
         link={vistoria.link}
-        emailSugerido={vistoria.conviteEmail ?? ''}
+        destinatarios={vistoria.destinatarios}
+        validadeSugerida={validadeDoUltimoConvite(
+          vistoria.conviteEnviadoEm,
+          vistoria.conviteExpiraEm,
+        )}
         pendencias={vistoria.pendencias.length}
       />
 

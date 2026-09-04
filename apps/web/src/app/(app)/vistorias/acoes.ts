@@ -60,15 +60,39 @@ export async function criarVistoria(
   redirect(destino);
 }
 
+/** O primeiro marcado vira destinatario e o resto entra em copia, sem repetir endereco. */
+function lerDestinatarios(dados: FormData) {
+  const escolhidos = [
+    ...dados.getAll('destinatarios').map((valor) => String(valor)),
+    String(dados.get('outroEmail') ?? ''),
+  ].map((email) => email.trim());
+
+  return escolhidos.filter(
+    (email, indice, lista) =>
+      email !== '' &&
+      lista.findIndex((outro) => outro.toLowerCase() === email.toLowerCase()) === indice,
+  );
+}
+
 export async function enviarConvite(
   vistoriaId: string,
   _anterior: EstadoVistoria,
   dados: FormData,
 ): Promise<EstadoVistoria> {
+  const [email, ...copias] = lerDestinatarios(dados);
+
+  if (!email) {
+    return { erro: 'Escolha ao menos um e-mail para receber o convite' };
+  }
+
+  // Campo em branco cai no padrao: zero seria recusado pelo contrato.
+  const validadeDias = Number(dados.get('validadeDias')) || 15;
+
   try {
     await apiPost(`/vistorias/${vistoriaId}/convite`, {
-      email: String(dados.get('email') ?? ''),
-      validadeDias: Number(dados.get('validadeDias') ?? 15),
+      email,
+      ...(copias.length ? { copias } : {}),
+      validadeDias,
     });
   } catch (erro) {
     return traduzir(erro);
@@ -76,7 +100,12 @@ export async function enviarConvite(
 
   revalidatePath(`/vistorias/${vistoriaId}`);
 
-  return { sucesso: 'Convite enviado' };
+  return {
+    sucesso:
+      copias.length > 0
+        ? `Convite enviado para ${email}, com cópia para ${copias.join(', ')}`
+        : `Convite enviado para ${email}`,
+  };
 }
 
 export async function aprovarVistoria(vistoriaId: string): Promise<void> {

@@ -117,3 +117,152 @@
     flex: 1 1 100%;
   }
 }
+
+/* ========== Aceite eletronico ========== */
+
+.cartoes-aceite {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--e3);
+  margin-top: var(--e3);
+}
+
+.aceite {
+  display: grid;
+  align-content: start;
+  gap: var(--e1);
+  padding: var(--e3);
+  border: var(--hairline) solid var(--borda);
+  border-radius: var(--raio);
+  background: var(--superficie-2);
+}
+
+/* Aceite que falta e placeholder, nao dado: a borda tracejada avisa isso sem texto extra. */
+.aceite[data-vazio='true'] {
+  border-style: dashed;
+  background: transparent;
+}
+
+.aceite .etiqueta {
+  justify-self: start;
+}
+
+.aceite .nome {
+  font-size: 1.05rem;
+  line-height: 1.3;
+}
+
+.aceite dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  gap: var(--e2);
+  margin: var(--e2) 0 0;
+}
+
+.aceite dt {
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--texto-tenue);
+}
+
+.aceite dd {
+  margin: 2px 0 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.aceite .declaracao {
+  margin: var(--e2) 0 0;
+  padding-left: var(--e2);
+  border-left: 2px solid var(--borda-forte);
+  color: var(--texto-suave);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+/* ========== Linha do tempo ========== */
+
+/* Sem gap: a borda esquerda de cada item e que forma o trilho continuo. */
+.linha-do-tempo {
+  display: grid;
+  margin: var(--e3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.linha-do-tempo li {
+  display: grid;
+  grid-template-columns: 118px 1fr;
+  gap: var(--e3);
+  align-items: start;
+}
+
+.linha-do-tempo .quando {
+  padding-top: 1px;
+  font-size: 0.8rem;
+  color: var(--texto-suave);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.linha-do-tempo li > div {
+  position: relative;
+  padding: 0 0 var(--e3) var(--e4);
+  border-left: 2px solid var(--borda);
+}
+
+.linha-do-tempo li:last-child > div {
+  border-left-color: transparent;
+}
+
+.linha-do-tempo li > div::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: -6px;
+  width: 10px;
+  height: 10px;
+  border-radius: var(--raio-pill);
+  background: var(--texto-tenue);
+  box-shadow: 0 0 0 3px var(--superficie);
+}
+
+.linha-do-tempo li[data-tom='primario'] > div::before {
+  background: var(--primaria);
+}
+
+.linha-do-tempo li[data-tom='positivo'] > div::before {
+  background: var(--positivo);
+}
+
+.linha-do-tempo li[data-tom='alerta'] > div::before {
+  background: var(--alerta);
+}
+
+.linha-do-tempo li > div strong {
+  display: block;
+  font-weight: 600;
+}
+
+.linha-do-tempo li > div span {
+  display: block;
+  font-size: 0.8rem;
+}
+
+@media (max-width: 560px) {
+  .linha-do-tempo li {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .linha-do-tempo .quando {
+    text-align: left;
+    padding-left: var(--e4);
+  }
+
+  .linha-do-tempo li > div {
+    padding-top: 2px;
+  }
+}

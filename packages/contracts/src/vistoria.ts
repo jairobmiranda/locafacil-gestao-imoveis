@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { cpfSchema } from './comum';
 
 export const tipoVistoriaSchema = z.enum(['ENTRADA', 'SAIDA', 'PERIODICA']);
 
@@ -155,5 +156,100 @@ export type VistoriaPublica = {
   imovel: { apelido: string; endereco: string };
   /** HTML ja sanitizado do ultimo "pedir complemento", para quem vai refazer saber o que falta. */
   motivoRecusa: string | null;
+  /** Aceite já dado por quem executou. Preenchido depois da conclusão. */
+  aceite: { nome: string; aceitoEm: string; codigo: string } | null;
   ambientes: VistoriaAmbientePublico[];
 };
+
+// ---------------------------------------------------------------------------
+// Aceite eletrônico, linha do tempo e envio do laudo
+// ---------------------------------------------------------------------------
+
+/**
+ * O que a pessoa marca ao concluir. Fica gravado junto do aceite porque o laudo
+ * precisa reproduzir o texto exato daquele dia, mesmo que a redação mude depois.
+ */
+export const DECLARACAO_EXECUTOR =
+  'Declaro que percorri o imóvel, que as respostas e as fotos enviadas retratam o estado em ' +
+  'que ele se encontra nesta data e que este registro tem valor de assinatura eletrônica.';
+
+export const DECLARACAO_GESTOR =
+  'Confiro a vistoria recebida e aceito o laudo como registro do estado do imóvel na data em ' +
+  'que foi executada. Este registro tem valor de assinatura eletrônica.';
+
+/** Aceite de quem executou, enviado junto da conclusão pelo link público. */
+export const aceitarVistoriaSchema = z.object({
+  nome: z.string().trim().min(3).max(150),
+  /** Sem CPF o aceite identifica um nome qualquer: é ele que amarra a declaração à pessoa. */
+  documento: cpfSchema,
+  confirmado: z.literal(true, {
+    errorMap: () => ({ message: 'Marque a declaração para concluir a vistoria' }),
+  }),
+});
+
+export const enviarLaudoSchema = z.object({
+  emails: z.array(z.string().email().max(150)).min(1).max(10),
+  /** Recado da gestão que entra antes do link, ex.: prazo para contestar. */
+  mensagem: z.string().max(1000).optional(),
+});
+
+export type AceitarVistoriaDto = z.infer<typeof aceitarVistoriaSchema>;
+export type EnviarLaudoDto = z.infer<typeof enviarLaudoSchema>;
+
+export type PapelAceiteVistoria = 'EXECUTOR' | 'GESTOR';
+
+export type TipoEventoVistoria =
+  | 'CRIADA'
+  | 'CONVITE_ENVIADO'
+  | 'COMPLEMENTO_SOLICITADO'
+  | 'LINK_ABERTO'
+  | 'EXECUCAO_INICIADA'
+  | 'FOTO_REMOVIDA'
+  | 'CONCLUIDA'
+  | 'APROVADA'
+  | 'AVISO_ENVIADO'
+  | 'LAUDO_GERADO'
+  | 'LAUDO_ENVIADO'
+  | 'LAUDO_ABERTO'
+  /** Não existe no banco: sai das fotos, agrupadas por ambiente. */
+  | 'FOTOS_RECEBIDAS';
+
+export type OrigemEventoVistoria = 'PAINEL' | 'LINK_PUBLICO' | 'SISTEMA';
+
+export type EventoVistoria = {
+  tipo: TipoEventoVistoria;
+  origem: OrigemEventoVistoria;
+  ocorridoEm: string;
+  descricao: string;
+  autor: string | null;
+  ip: string | null;
+  agente: string | null;
+};
+
+export type AceiteVistoria = {
+  papel: PapelAceiteVistoria;
+  nome: string;
+  email: string | null;
+  documento: string | null;
+  aceitoEm: string;
+  ip: string | null;
+  agente: string | null;
+  /** Aparelho e navegador em uma linha, já resumidos pela API. */
+  dispositivo: string;
+  declaracao: string;
+  hashConteudo: string;
+  /** `hashConteudo` em formato curto, o que a pessoa lê e confere no laudo. */
+  codigo: string;
+  /** Falso quando a vistoria mudou depois do aceite: o laudo avisa em vez de esconder. */
+  cobreConteudoAtual: boolean;
+};
+
+/**
+ * Resumo do conteúdo vira um código curto para conferência a olho.
+ * Cinco e cinco: o suficiente para comparar sem virar um enigma.
+ */
+export function codigoVerificacao(hash: string): string {
+  const limpo = hash.replace(/[^0-9a-f]/gi, '').toUpperCase();
+
+  return `${limpo.slice(0, 5)}-${limpo.slice(5, 10)}`;
+}

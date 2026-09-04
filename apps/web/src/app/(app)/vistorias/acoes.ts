@@ -153,3 +153,46 @@ export async function gerarLaudo(vistoriaId: string): Promise<void> {
   await apiPost(`/vistorias/${vistoriaId}/laudo`);
   revalidatePath(`/vistorias/${vistoriaId}`);
 }
+
+/** O laudo pode ser enviado quantas vezes for preciso: cada envio fica na linha do tempo. */
+export async function enviarLaudo(
+  vistoriaId: string,
+  _anterior: EstadoVistoria,
+  dados: FormData,
+): Promise<EstadoVistoria> {
+  const escolhidos = [
+    ...dados.getAll('destinatariosLaudo').map((valor) => String(valor)),
+    String(dados.get('outroEmailLaudo') ?? ''),
+  ].map((email) => email.trim());
+
+  const emails = escolhidos.filter(
+    (email, indice, lista) =>
+      email !== '' &&
+      lista.findIndex((outro) => outro.toLowerCase() === email.toLowerCase()) === indice,
+  );
+
+  if (emails.length === 0) {
+    return { erro: 'Escolha ao menos um e-mail para receber o laudo' };
+  }
+
+  const mensagem = String(dados.get('mensagem') ?? '').trim();
+
+  let resultado: { destinatarios: string[]; anexado: boolean };
+
+  try {
+    resultado = await apiPost<{ destinatarios: string[]; anexado: boolean }>(
+      `/vistorias/${vistoriaId}/laudo/enviar`,
+      { emails, ...(mensagem ? { mensagem } : {}) },
+    );
+  } catch (erro) {
+    return traduzir(erro);
+  }
+
+  revalidatePath(`/vistorias/${vistoriaId}`);
+
+  return {
+    sucesso:
+      `Laudo enviado para ${resultado.destinatarios.join(', ')}` +
+      (resultado.anexado ? ' com o PDF anexado.' : ' (só o link: o arquivo ficou grande demais).'),
+  };
+}

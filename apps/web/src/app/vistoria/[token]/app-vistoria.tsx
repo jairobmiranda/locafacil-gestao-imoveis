@@ -1,11 +1,15 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
-import type {
-  EstadoItemVistoria,
-  VistoriaItemPublico,
-  VistoriaPublica,
+import {
+  cpfValido,
+  DECLARACAO_EXECUTOR,
+  formatarCpf,
+  type EstadoItemVistoria,
+  type VistoriaItemPublico,
+  type VistoriaPublica,
 } from '@locafacil/contracts';
+import { formatarDataHora } from '@/lib/formato';
 import { useFilaEnvio } from './fila-envio';
 import { prepararImagem } from './imagem';
 
@@ -18,7 +22,11 @@ const ESTADOS: { valor: EstadoItemVistoria; rotulo: string }[] = [
   { valor: 'NAO_APLICAVEL', rotulo: 'Não tem' },
 ];
 
-type Tela = { nome: 'ambientes' } | { nome: 'itens'; ambienteId: string } | { nome: 'fim' };
+type Tela =
+  | { nome: 'ambientes' }
+  | { nome: 'itens'; ambienteId: string }
+  | { nome: 'aceite' }
+  | { nome: 'fim' };
 
 /** Item sem foto minima e opcional: nao exige estado nem foto para concluir. */
 const itemOpcional = (item: VistoriaItemPublico): boolean => item.minimoFotos === 0;
@@ -59,6 +67,12 @@ export function AppVistoria({ token, inicial }: { token: string; inicial: Vistor
   const [tela, setTela] = useState<Tela>({ nome: 'ambientes' });
   const [erro, setErro] = useState<string | null>(null);
   const [concluindo, setConcluindo] = useState(false);
+
+  // Aceite eletrônico: o que a pessoa declara ao fechar a vistoria fica visível até o fim.
+  const [aceite, setAceite] = useState(inicial.aceite);
+  const [nome, setNome] = useState('');
+  const [documento, setDocumento] = useState('');
+  const [confirmado, setConfirmado] = useState(false);
 
   const recarregar = useCallback(async () => {
     const resposta = await fetch(`/api/vistoria/${token}`, { cache: 'no-store' });
@@ -140,20 +154,56 @@ export function AppVistoria({ token, inicial }: { token: string; inicial: Vistor
     }
   };
 
+  /** Foto enviada por engano sai pelo mesmo link. Depois de concluída, a API já barra. */
+  const apagarFoto = async (fotoId: string) => {
+    setErro(null);
+
+    const resposta = await fetch(`/api/vistoria/${token}/fotos/${fotoId}`, { method: 'DELETE' });
+
+    if (!resposta.ok) {
+      setErro('Não conseguimos apagar esta foto agora. Tente de novo.');
+      return;
+    }
+
+    setVistoria((atual) => ({
+      ...atual,
+      ambientes: atual.ambientes.map((ambiente) => ({
+        ...ambiente,
+        itens: ambiente.itens.map((item) => ({
+          ...item,
+          fotos: item.fotos.filter((foto) => foto.id !== fotoId),
+        })),
+      })),
+    }));
+  };
+
   const concluir = async () => {
     setConcluindo(true);
     setErro(null);
 
-    const resposta = await fetch(`/api/vistoria/${token}/concluir`, { method: 'POST' });
+    const resposta = await fetch(`/api/vistoria/${token}/concluir`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nome: nome.trim(),
+        documento: documento.replace(/\D/g, ''),
+        confirmado: true,
+      }),
+    });
 
     setConcluindo(false);
 
     if (!resposta.ok) {
-      const corpo = await resposta.json().catch(() => null);
-      setErro(corpo?.mensagem ?? 'Ainda faltam itens para concluir.');
+      const corpo = (await resposta.json().catch(() => null)) as { mensagem?: string } | null;
+      setErro(corpo?.mensagem ?? 'Não conseguimos concluir agora. Tente de novo.');
       return;
     }
 
+    const corpo = (await resposta.json()) as {
+      aceite: { nome: string; aceitoEm: string; codigo: string };
+    };
+
+    setAceite(corpo.aceite);
     setTela({ nome: 'fim' });
   };
 
@@ -165,6 +215,103 @@ export function AppVistoria({ token, inicial }: { token: string; inicial: Vistor
           Recebemos todas as fotos. A gestão vai conferir e você receberá o laudo por e-mail.
           Pode fechar esta página.
         </p>
+
+        {aceite ? (
+          <div className="recibo-aceite">
+            <strong>Aceite registrado</strong>
+            <span>{aceite.nome}</span>
+            <span>{formatarDataHora(aceite.aceitoEm)}</span>
+            <span className="codigo">Código de verificação {aceite.codigo}</span>
+            <p className="texto-suave">
+              Este mesmo código aparece no laudo em PDF. Ele resume o conteúdo que você aceitou.
+            </p>
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
+  if (tela.nome === 'aceite') {
+    // Só reclama do CPF depois dos 11 dígitos: apontar erro no meio da digitação é ruído.
+    const cpf = documento.replace(/\D/g, '');
+    const cpfCompleto = cpf.length === 11;
+    const cpfCorreto = cpfValido(cpf);
+    const podeConcluir = nome.trim().length >= 3 && cpfCorreto && confirmado;
+
+    return (
+      <div className="vistoria-final aceite-tela">
+        <h1>Falta só confirmar</h1>
+        <p className="texto-suave">
+          Seu nome, seu CPF, a data e a hora ficam registrados junto do que você enviou, e vale
+          como aceite eletrônico da vistoria.
+        </p>
+
+        {erro ? (
+          <p className="alerta-item" data-severidade="BLOQUEIO">
+            {erro}
+          </p>
+        ) : null}
+
+        <label>
+          Seu nome completo
+          <input
+            type="text"
+            value={nome}
+            autoComplete="name"
+            onChange={(evento) => setNome(evento.target.value)}
+            placeholder="Como está no contrato"
+          />
+        </label>
+
+        <label>
+          Seu CPF
+          <input
+            type="text"
+            value={documento}
+            inputMode="numeric"
+            autoComplete="off"
+            maxLength={14}
+            data-invalido={cpfCompleto && !cpfCorreto}
+            aria-invalid={cpfCompleto && !cpfCorreto}
+            aria-describedby="erro-cpf"
+            onChange={(evento) => setDocumento(formatarCpf(evento.target.value))}
+            placeholder="000.000.000-00"
+          />
+          <span className="aviso-campo" id="erro-cpf" role="status">
+            {cpfCompleto && !cpfCorreto ? 'Esse CPF não confere. Revise os números.' : ''}
+          </span>
+        </label>
+
+        <label className="declaracao">
+          <input
+            type="checkbox"
+            checked={confirmado}
+            onChange={(evento) => setConfirmado(evento.target.checked)}
+          />
+          <span>{DECLARACAO_EXECUTOR}</span>
+        </label>
+
+        <div className="linha">
+          <button
+            type="button"
+            className="botao"
+            disabled={concluindo}
+            onClick={() => {
+              setErro(null);
+              setTela({ nome: 'ambientes' });
+            }}
+          >
+            Voltar
+          </button>
+          <button
+            type="button"
+            className="botao botao-primario"
+            disabled={concluindo || !podeConcluir}
+            onClick={() => void concluir()}
+          >
+            {concluindo ? 'Enviando...' : 'Concluir vistoria'}
+          </button>
+        </div>
       </div>
     );
   }
@@ -269,6 +416,7 @@ export function AppVistoria({ token, inicial }: { token: string; inicial: Vistor
                 onEstado={(estado) => void responder(item.id, { estado })}
                 onObservacao={(observacao) => void responder(item.id, { observacao })}
                 onCapturar={(arquivos) => void capturar(item.id, arquivos)}
+                onApagarFoto={(fotoId) => void apagarFoto(fotoId)}
               />
             ))}
 
@@ -333,14 +481,15 @@ export function AppVistoria({ token, inicial }: { token: string; inicial: Vistor
           <button
             type="button"
             className="botao botao-primario"
-            onClick={() => void concluir()}
+            onClick={() => {
+              setErro(null);
+              setTela({ nome: 'aceite' });
+            }}
             disabled={concluindo || pendencias.length > 0 || enviando > 0}
           >
-            {concluindo
-              ? 'Enviando...'
-              : pendencias.length > 0
-                ? `Faltam ${pendencias.length} obrigatórios`
-                : 'Concluir vistoria'}
+            {pendencias.length > 0
+              ? `Faltam ${pendencias.length} obrigatórios`
+              : 'Concluir vistoria'}
           </button>
         </div>
       </div>
@@ -355,6 +504,7 @@ function CartaoItem({
   onEstado,
   onObservacao,
   onCapturar,
+  onApagarFoto,
 }: {
   item: VistoriaItemPublico;
   enviando: number;
@@ -362,7 +512,10 @@ function CartaoItem({
   onEstado: (estado: EstadoItemVistoria) => void;
   onObservacao: (observacao: string) => void;
   onCapturar: (arquivos: FileList | null) => void;
+  onApagarFoto: (fotoId: string) => void;
 }) {
+  // Apagar é definitivo: o X só arma a confirmação, quem apaga é o segundo toque.
+  const [confirmando, setConfirmando] = useState<string | null>(null);
   const total = item.fotos.length + enviando;
   const opcional = itemOpcional(item);
   const completo = opcional || total >= item.minimoFotos;
@@ -396,6 +549,33 @@ function CartaoItem({
               <div className="miniatura" key={foto.id}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={`/api/vistoria-foto/${foto.id}`} alt="" loading="lazy" />
+
+                {confirmando === foto.id ? (
+                  <div className="confirmar-remocao">
+                    <span>Apagar?</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setConfirmando(null);
+                        onApagarFoto(foto.id);
+                      }}
+                    >
+                      Apagar
+                    </button>
+                    <button type="button" onClick={() => setConfirmando(null)}>
+                      Manter
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className="apagar-foto"
+                    aria-label={`Apagar foto de ${item.nome}`}
+                    onClick={() => setConfirmando(foto.id)}
+                  >
+                    ×
+                  </button>
+                )}
               </div>
             ))}
             {previas.map((previa) => (

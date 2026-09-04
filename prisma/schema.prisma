@@ -145,6 +145,34 @@ enum EstadoItemVistoria {
   NAO_APLICAVEL
 }
 
+/// Cada passo da vistoria vira um evento. E a partir deles que sai a linha do tempo do laudo.
+enum TipoEventoVistoria {
+  CRIADA
+  CONVITE_ENVIADO
+  COMPLEMENTO_SOLICITADO
+  LINK_ABERTO
+  EXECUCAO_INICIADA
+  FOTO_REMOVIDA
+  CONCLUIDA
+  APROVADA
+  AVISO_ENVIADO
+  LAUDO_GERADO
+  LAUDO_ENVIADO
+  LAUDO_ABERTO
+}
+
+enum OrigemEventoVistoria {
+  PAINEL
+  LINK_PUBLICO
+  SISTEMA
+}
+
+/// Quem deu o aceite: quem executou a vistoria (normalmente o locatario) ou a gestao.
+enum PapelAceiteVistoria {
+  EXECUTOR
+  GESTOR
+}
+
 enum SituacaoNotificacao {
   PENDENTE
   ENVIADO
@@ -597,6 +625,8 @@ model Vistoria {
   responsavel Pessoa?   @relation(fields: [responsavelId], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   ambientes VistoriaAmbiente[]
+  eventos   VistoriaEvento[]
+  aceites   VistoriaAceite[]
 
   @@index([imovelId, tipo])
   @@index([contratoId])
@@ -664,6 +694,58 @@ model VistoriaFoto {
 
   @@index([itemId])
   @@map("vistoria_fotos")
+}
+
+/// Linha do tempo da vistoria: convite, acesso, conclusao, aprovacao e envio do laudo.
+/// As fotos nao viram evento; a data de cada uma ja esta em `vistoria_fotos`.
+model VistoriaEvento {
+  id         String               @id @default(uuid()) @db.Char(36)
+  vistoriaId String               @map("vistoria_id") @db.Char(36)
+  tipo       TipoEventoVistoria
+  origem     OrigemEventoVistoria @default(SISTEMA)
+  ocorridoEm DateTime             @default(now()) @map("ocorrido_em")
+
+  /// Frase pronta para a linha do tempo, ex.: "Convite enviado para joao@exemplo.com".
+  descricao String @db.VarChar(300)
+
+  /// Quem disparou: e-mail do usuario do painel, ou do destinatario do convite.
+  autor String? @db.VarChar(150)
+
+  /// Endereco e navegador de quem agiu pelo link publico. Prova fraca, mas e o que da para ter.
+  ip     String? @db.VarChar(45)
+  agente String? @db.VarChar(255)
+
+  vistoria Vistoria @relation(fields: [vistoriaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([vistoriaId, ocorridoEm])
+  @@map("vistoria_eventos")
+}
+
+/// Aceite eletronico. Sem desenho de assinatura: valem o carimbo, o IP e o hash do conteudo aceito.
+model VistoriaAceite {
+  id         String              @id @default(uuid()) @db.Char(36)
+  vistoriaId String              @map("vistoria_id") @db.Char(36)
+  papel      PapelAceiteVistoria
+  aceitoEm   DateTime            @default(now()) @map("aceito_em")
+
+  nome      String  @db.VarChar(150)
+  email     String? @db.VarChar(150)
+  documento String? @db.VarChar(20)
+
+  ip     String? @db.VarChar(45)
+  agente String? @db.VarChar(255)
+
+  /// SHA-256 do que foi aceito (itens, estados, observacoes e hash de cada foto).
+  /// Se a vistoria mudar depois, o laudo mostra que o aceite nao cobre o conteudo atual.
+  hashConteudo String @map("hash_conteudo") @db.Char(64)
+
+  /// Texto exato que a pessoa marcou. Fica gravado para o laudo reproduzir palavra por palavra.
+  declaracao String @db.Text
+
+  vistoria Vistoria @relation(fields: [vistoriaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([vistoriaId, papel])
+  @@map("vistoria_aceites")
 }
 
 // ---------------------------------------------------------------------------

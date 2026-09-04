@@ -6,22 +6,30 @@ import {
 } from '@nestjs/common';
 import { createHash, randomUUID } from 'node:crypto';
 import { Prisma } from '@prisma/client';
-import type {
-  AcompanharVistoriaDto,
-  CriarVistoriaDto,
-  DestinatarioConvite,
-  EnviarConviteDto,
-  ListarVistoriasDto,
-  MetadadosFotoDto,
-  PapelDestinatario,
-  ResponderItemDto,
-  VistoriaPublica,
+import {
+  codigoVerificacao,
+  cpfValido,
+  DECLARACAO_EXECUTOR,
+  DECLARACAO_GESTOR,
+  type AceitarVistoriaDto,
+  type AcompanharVistoriaDto,
+  type CriarVistoriaDto,
+  type DestinatarioConvite,
+  type EnviarConviteDto,
+  type ListarVistoriasDto,
+  type MetadadosFotoDto,
+  type PapelDestinatario,
+  type ResponderItemDto,
+  type VistoriaPublica,
 } from '@locafacil/contracts';
 import { ArmazenamentoService } from '../anexos/armazenamento.service';
 import { somarDias } from '../comum/datas';
 import { sanitizarHtmlRico, textoDeHtml } from '../comum/html';
+import type { ContextoRequisicao } from '../comum/requisicao';
 import { PrismaService } from '../prisma/prisma.service';
+import { AceitesVistoriaService, resumoConteudo } from './aceites-vistoria.service';
 import { AvisoVistoriaService, type MomentoAviso } from './aviso-vistoria.service';
+import { EventosVistoriaService } from './eventos-vistoria.service';
 import { materializar, roteiroPara, roteirosDisponiveis } from './roteiros';
 
 const INCLUI_EXECUCAO = {
@@ -115,9 +123,11 @@ export class VistoriasService {
     private readonly prisma: PrismaService,
     private readonly armazenamento: ArmazenamentoService,
     private readonly aviso: AvisoVistoriaService,
+    private readonly eventos: EventosVistoriaService,
+    private readonly aceites: AceitesVistoriaService,
   ) {}
 
-  async criar(dados: CriarVistoriaDto) {
+  async criar(dados: CriarVistoriaDto, autor?: string) {
     const imovel = await this.prisma.imovel.findUnique({ where: { id: dados.imovelId } });
 
     if (!imovel) {
@@ -143,7 +153,7 @@ export class VistoriasService {
       throw new BadRequestException('Selecione ao menos um ambiente para a vistoria');
     }
 
-    return this.prisma.vistoria.create({
+    const criada = await this.prisma.vistoria.create({
       data: {
         imovelId: dados.imovelId,
         contratoId: dados.contratoId ?? null,
@@ -163,6 +173,16 @@ export class VistoriasService {
       },
       include: INCLUI_EXECUCAO,
     });
+
+    await this.eventos.registrar({
+      vistoriaId: criada.id,
+      tipo: 'CRIADA',
+      origem: 'PAINEL',
+      descricao: `Vistoria criada com o roteiro ${roteiro.nome}`,
+      autor,
+    });
+
+    return criada;
   }
 
   roteiros() {
@@ -359,29 +379,69 @@ export class VistoriasService {
       return;
     }
 
+    const emails = AvisoVistoriaService.separar(vistoria.avisarEmails);
+
     await this.aviso.avisar({
       momento,
       vistoriaId,
-      emails: AvisoVistoriaService.separar(vistoria.avisarEmails),
+      emails,
       tipo: vistoria.tipo,
       imovel: vistoria.imovel.apelido,
     });
+
+    await this.eventos.registrar({
+      vistoriaId,
+      tipo: 'AVISO_ENVIADO',
+      origem: 'SISTEMA',
+      descricao:
+        `Aviso de ${momento === 'INICIO' ? 'início' : 'conclusão'} enviado para ` +
+        emails.join(', '),
+    });
   }
 
-  async aprovar(id: string) {
+  /**
+   * Aprovar é o aceite da gestão. Guarda quem clicou, de onde e o resumo do conteúdo aceito:
+   * é o que substitui a assinatura no laudo.
+   */
+  async aprovar(
+    id: string,
+    gestor: { nome: string; email: string },
+    contexto?: ContextoRequisicao,
+  ) {
     const vistoria = await this.buscar(id);
 
     if (vistoria.situacao !== 'ENVIADA') {
       throw new ConflictException('Só é possível aprovar uma vistoria já enviada');
     }
 
-    return this.prisma.vistoria.update({
+    const aprovada = await this.prisma.vistoria.update({
       where: { id },
       data: { situacao: 'APROVADA', aprovadaEm: new Date() },
     });
+
+    await this.aceites.registrar({
+      vistoriaId: id,
+      papel: 'GESTOR',
+      nome: gestor.nome,
+      email: gestor.email,
+      declaracao: DECLARACAO_GESTOR,
+      hashConteudo: resumoConteudo(vistoria),
+      contexto,
+    });
+
+    await this.eventos.registrar({
+      vistoriaId: id,
+      tipo: 'APROVADA',
+      origem: 'PAINEL',
+      descricao: `Vistoria aceita pela gestão, por ${gestor.nome}`,
+      autor: gestor.email,
+      contexto,
+    });
+
+    return aprovada;
   }
 
-  async recusar(id: string, motivo: string) {
+  async recusar(id: string, motivo: string, autor?: string, contexto?: ContextoRequisicao) {
     const vistoria = await this.buscar(id);
 
     const limpo = sanitizarHtmlRico(motivo);
@@ -391,7 +451,7 @@ export class VistoriasService {
       throw new BadRequestException('Escreva o que precisa ser refeito');
     }
 
-    return this.prisma.vistoria.update({
+    const recusada = await this.prisma.vistoria.update({
       where: { id },
       // Vai ser retomada e concluida de novo: os carimbos zeram para os avisos repetirem.
       data: {
@@ -403,6 +463,17 @@ export class VistoriasService {
         conviteExpiraEm: prazoRetomada(vistoria),
       },
     });
+
+    await this.eventos.registrar({
+      vistoriaId: id,
+      tipo: 'COMPLEMENTO_SOLICITADO',
+      origem: 'PAINEL',
+      descricao: `Complemento pedido: ${textoDeHtml(limpo)}`,
+      autor,
+      contexto,
+    });
+
+    return recusada;
   }
 
   // ---------------------------------------------------------------------------
@@ -420,7 +491,10 @@ export class VistoriasService {
     }
   }
 
-  private async marcarEmExecucao(vistoria: VistoriaCompleta): Promise<void> {
+  private async marcarEmExecucao(
+    vistoria: VistoriaCompleta,
+    contexto?: ContextoRequisicao,
+  ): Promise<void> {
     if (vistoria.situacao === 'EM_EXECUCAO') {
       return;
     }
@@ -429,9 +503,26 @@ export class VistoriasService {
       where: { id: vistoria.id },
       data: { situacao: 'EM_EXECUCAO', iniciadaEm: vistoria.iniciadaEm ?? new Date() },
     });
+
+    // Retomada depois de um complemento não recomeça: o carimbo de início já existe.
+    if (!vistoria.iniciadaEm) {
+      await this.eventos.registrar({
+        vistoriaId: vistoria.id,
+        tipo: 'EXECUCAO_INICIADA',
+        origem: 'LINK_PUBLICO',
+        descricao: 'Execução iniciada: primeira resposta registrada',
+        autor: vistoria.conviteEmail,
+        contexto,
+      });
+    }
   }
 
-  async responderItem(vistoriaId: string, itemId: string, dados: ResponderItemDto) {
+  async responderItem(
+    vistoriaId: string,
+    itemId: string,
+    dados: ResponderItemDto,
+    contexto?: ContextoRequisicao,
+  ) {
     const vistoria = await this.buscar(vistoriaId);
     this.garantirEditavel(vistoria);
 
@@ -443,7 +534,7 @@ export class VistoriasService {
       throw new NotFoundException('Item não pertence a esta vistoria');
     }
 
-    await this.marcarEmExecucao(vistoria);
+    await this.marcarEmExecucao(vistoria, contexto);
 
     return this.prisma.vistoriaItem.update({
       where: { id: itemId },
@@ -459,6 +550,7 @@ export class VistoriasService {
     itemId: string,
     arquivo: ArquivoRecebido | undefined,
     metadados: MetadadosFotoDto,
+    contexto?: ContextoRequisicao,
   ) {
     const vistoria = await this.buscar(vistoriaId);
     this.garantirEditavel(vistoria);
@@ -498,7 +590,7 @@ export class VistoriasService {
     const chaveObjeto = `vistoria/${vistoriaId}/${itemId}/${randomUUID()}.jpg`;
 
     await this.armazenamento.enviar(chaveObjeto, arquivo.buffer, tipoReal);
-    await this.marcarEmExecucao(vistoria);
+    await this.marcarEmExecucao(vistoria, contexto);
 
     const registrada = await this.prisma.vistoriaFoto.create({
       data: {
@@ -527,21 +619,46 @@ export class VistoriasService {
     return registrada;
   }
 
-  async removerFoto(vistoriaId: string, fotoId: string): Promise<void> {
+  /**
+   * Quem executa também apaga, pelo link: foto tremida ou do ambiente errado não prova nada.
+   * A imagem apagada some do manifesto, então a remoção fica registrada na linha do tempo,
+   * com o resumo da foto que existiu.
+   */
+  async removerFoto(
+    vistoriaId: string,
+    fotoId: string,
+    quem: {
+      origem: 'PAINEL' | 'LINK_PUBLICO';
+      autor?: string | null;
+      contexto?: ContextoRequisicao;
+    },
+  ): Promise<void> {
     const vistoria = await this.buscar(vistoriaId);
     this.garantirEditavel(vistoria);
 
-    const foto = vistoria.ambientes
-      .flatMap((ambiente) => ambiente.itens)
-      .flatMap((item) => item.fotos)
-      .find((candidata) => candidata.id === fotoId);
+    const localizada = vistoria.ambientes
+      .flatMap((ambiente) =>
+        ambiente.itens.flatMap((item) => item.fotos.map((foto) => ({ ambiente, item, foto }))),
+      )
+      .find((candidata) => candidata.foto.id === fotoId);
 
-    if (!foto) {
+    if (!localizada) {
       throw new NotFoundException('Foto não pertence a esta vistoria');
     }
 
     await this.prisma.vistoriaFoto.delete({ where: { id: fotoId } });
-    await this.armazenamento.remover(foto.chaveObjeto);
+    await this.armazenamento.remover(localizada.foto.chaveObjeto);
+
+    await this.eventos.registrar({
+      vistoriaId,
+      tipo: 'FOTO_REMOVIDA',
+      origem: quem.origem,
+      descricao:
+        `Foto removida de ${localizada.ambiente.nome}, item ${localizada.item.nome} ` +
+        `(resumo ${localizada.foto.hashSha256.slice(0, 12)})`,
+      autor: quem.autor ?? vistoria.conviteEmail,
+      contexto: quem.contexto,
+    });
   }
 
   /** Item com `minimoFotos` zero e opcional: nao exige estado nem foto para concluir. */
@@ -558,9 +675,18 @@ export class VistoriasService {
     );
   }
 
-  async concluir(vistoriaId: string) {
+  /**
+   * Concluir e dar o aceite são o mesmo ato: quem executou declara que o que enviou retrata o
+   * imóvel e o registro guarda nome, carimbo, IP e o resumo do conteúdo daquele momento.
+   */
+  async concluir(vistoriaId: string, aceite: AceitarVistoriaDto, contexto?: ContextoRequisicao) {
     const vistoria = await this.buscar(vistoriaId);
     this.garantirEditavel(vistoria);
+
+    // O schema garante o formato; os dígitos verificadores são conferidos aqui, como no cadastro.
+    if (!cpfValido(aceite.documento)) {
+      throw new BadRequestException('Informe um CPF válido');
+    }
 
     const pendentes = this.pendencias(vistoria);
 
@@ -577,20 +703,58 @@ export class VistoriasService {
       select: { id: true, situacao: true, enviadaEm: true },
     });
 
+    const registrado = await this.aceites.registrar({
+      vistoriaId,
+      papel: 'EXECUTOR',
+      nome: aceite.nome,
+      email: vistoria.conviteEmail,
+      documento: aceite.documento,
+      declaracao: DECLARACAO_EXECUTOR,
+      hashConteudo: resumoConteudo(vistoria),
+      contexto,
+    });
+
+    await this.eventos.registrar({
+      vistoriaId,
+      tipo: 'CONCLUIDA',
+      origem: 'LINK_PUBLICO',
+      descricao: `Vistoria concluída e aceita por ${aceite.nome}`,
+      autor: vistoria.conviteEmail,
+      contexto,
+    });
+
     await this.dispararAviso(vistoriaId, 'CONCLUSAO');
 
-    return concluida;
+    return {
+      ...concluida,
+      aceite: {
+        nome: registrado.nome,
+        aceitoEm: registrado.aceitoEm,
+        codigo: codigoVerificacao(registrado.hashConteudo),
+      },
+    };
   }
 
   /** Projecao enxuta do link publico: nunca devolve dados do contrato ou das partes. */
   async paraExecucao(vistoriaId: string): Promise<VistoriaPublica> {
     const vistoria = await this.buscar(vistoriaId);
+    const aceite = await this.prisma.vistoriaAceite.findUnique({
+      where: { vistoriaId_papel: { vistoriaId, papel: 'EXECUTOR' } },
+      select: { nome: true, aceitoEm: true, hashConteudo: true },
+    });
 
     return {
       id: vistoria.id,
       tipo: vistoria.tipo,
       situacao: vistoria.situacao,
       motivoRecusa: vistoria.situacao === 'RECUSADA' ? vistoria.motivoRecusa : null,
+      aceite: aceite
+        ? {
+            nome: aceite.nome,
+            aceitoEm: aceite.aceitoEm.toISOString(),
+            codigo: codigoVerificacao(aceite.hashConteudo),
+          }
+        : null,
       imovel: {
         apelido: vistoria.imovel.apelido,
         endereco: [
@@ -623,6 +787,22 @@ export class VistoriasService {
         })),
       })),
     };
+  }
+
+  /**
+   * Tudo o que o laudo e a tela de conferência precisam: a vistoria, a linha do tempo e os
+   * aceites já conferidos contra o conteúdo de hoje.
+   */
+  async dossie(id: string) {
+    const vistoria = await this.buscar(id);
+    const hashConteudo = resumoConteudo(vistoria);
+
+    const [linhaDoTempo, aceites] = await Promise.all([
+      this.eventos.linhaDoTempo(id),
+      this.aceites.listar(id, hashConteudo),
+    ]);
+
+    return { vistoria, linhaDoTempo, aceites, hashConteudo };
   }
 
   async conteudoFoto(fotoId: string) {

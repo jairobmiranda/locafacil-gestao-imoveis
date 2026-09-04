@@ -143,6 +143,56 @@
   display: block;
 }
 
+/* Alvo de 32px no canto: dedo grande, foto pequena, e some enquanto a foto ainda sobe. */
+.apagar-foto {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: var(--raio-pill);
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* Cobre a miniatura inteira: confirmar por engano seria perder a foto de novo. */
+.confirmar-remocao {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  align-content: center;
+  justify-items: stretch;
+  gap: var(--e1);
+  padding: var(--e1);
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  text-align: center;
+  font-size: 0.75rem;
+}
+
+.confirmar-remocao button {
+  padding: var(--e1);
+  border: none;
+  border-radius: var(--raio-sm);
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.confirmar-remocao button:first-of-type {
+  background: var(--negativo);
+}
+
 .miniatura[data-enviando='true']::after {
   content: 'enviando';
   position: absolute;
@@ -277,4 +327,96 @@
 .aviso-complemento > strong {
   color: var(--alerta);
   font-size: 0.9rem;
+}
+
+/* ========== Aceite eletronico ========== */
+
+/* A tela de aceite reusa o layout do final, mas com campos: texto centralizado atrapalha
+   a leitura da declaracao e o preenchimento. */
+.aceite-tela {
+  max-width: 520px;
+  text-align: left;
+  gap: var(--e3);
+}
+
+.aceite-tela label {
+  display: grid;
+  gap: var(--e1);
+  font-weight: 600;
+}
+
+.aceite-tela input[type='text'] {
+  width: 100%;
+  padding: var(--e2);
+  font-size: 1rem;
+  border: var(--hairline) solid var(--borda-forte);
+  border-radius: var(--raio-sm);
+  background: var(--superficie);
+  color: var(--texto);
+}
+
+.aceite-tela input[data-invalido='true'] {
+  border-color: var(--negativo);
+  background: var(--negativo-suave);
+}
+
+/* Ocupa a linha mesmo vazio: a mensagem aparecendo nao pode empurrar o botao para baixo. */
+.aceite-tela .aviso-campo {
+  min-height: 1.15rem;
+  color: var(--negativo);
+  font-size: 0.85rem;
+  font-weight: 400;
+}
+
+/* Alvo grande: quem esta em pe dentro do imovel marca isso com o polegar. */
+.aceite-tela .declaracao {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  align-items: start;
+  gap: var(--e2);
+  padding: var(--e3);
+  border: var(--hairline) solid var(--borda);
+  border-radius: var(--raio);
+  background: var(--superficie-alt);
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+.aceite-tela .declaracao input {
+  width: 24px;
+  height: 24px;
+  margin: 0;
+}
+
+.aceite-tela .linha {
+  display: flex;
+  gap: var(--e2);
+}
+
+.aceite-tela .linha .botao {
+  flex: 1 1 0;
+}
+
+.recibo-aceite {
+  display: grid;
+  gap: var(--e1);
+  padding: var(--e4);
+  border: var(--hairline) solid var(--positivo-borda);
+  border-radius: var(--raio);
+  background: var(--positivo-suave);
+  text-align: left;
+}
+
+.recibo-aceite > strong {
+  color: var(--positivo);
+}
+
+.recibo-aceite .codigo {
+  font-family: var(--fonte-mono);
+  letter-spacing: 0.06em;
+}
+
+.recibo-aceite p {
+  margin: var(--e1) 0 0;
+  font-size: 0.85rem;
 }

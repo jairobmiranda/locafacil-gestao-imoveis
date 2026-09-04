@@ -6,7 +6,6 @@ import type { DestinatarioConvite } from '@locafacil/contracts';
 import {
   aprovarVistoria,
   enviarConvite,
-  gerarLaudo,
   recusarVistoria,
   type EstadoVistoria,
 } from '../acoes';
@@ -31,7 +30,6 @@ export function AcoesVistoria({
   link,
   destinatarios,
   validadeSugerida,
-  pendencias,
 }: {
   id: string;
   imovel: string;
@@ -39,7 +37,6 @@ export function AcoesVistoria({
   link: string;
   destinatarios: DestinatarioConvite[];
   validadeSugerida: number;
-  pendencias: number;
 }) {
   const router = useRouter();
   const [processando, iniciar] = useTransition();
@@ -170,36 +167,23 @@ export function AcoesVistoria({
         </button>
       </div>
 
-      {situacao === 'ENVIADA' || situacao === 'APROVADA' ? (
+      {situacao === 'ENVIADA' ? (
         <div className="acoes-formulario">
-          {situacao === 'ENVIADA' ? (
-            <>
-              <button
-                type="button"
-                className="botao"
-                disabled={processando}
-                onClick={() => setPedindoComplemento(true)}
-              >
-                Pedir complemento
-              </button>
-              <button
-                type="button"
-                className="botao botao-primario"
-                disabled={processando}
-                onClick={() => executar(() => aprovarVistoria(id))}
-              >
-                Aprovar vistoria
-              </button>
-            </>
-          ) : null}
-
           <button
             type="button"
             className="botao"
-            disabled={processando || pendencias > 0}
-            onClick={() => executar(() => gerarLaudo(id))}
+            disabled={processando}
+            onClick={() => setPedindoComplemento(true)}
           >
-            {processando ? 'Gerando...' : 'Gerar laudo em PDF'}
+            Pedir complemento
+          </button>
+          <button
+            type="button"
+            className="botao botao-primario"
+            disabled={processando}
+            onClick={() => executar(() => aprovarVistoria(id))}
+          >
+            Aprovar e registrar aceite
           </button>
         </div>
       ) : null}

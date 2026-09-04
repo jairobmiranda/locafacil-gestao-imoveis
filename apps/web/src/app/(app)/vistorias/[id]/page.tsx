@@ -1,8 +1,15 @@
-import type { DestinatarioConvite, UsuarioAutenticado } from '@locafacil/contracts';
+import type {
+  AceiteVistoria,
+  DestinatarioConvite,
+  EventoVistoria,
+  UsuarioAutenticado,
+} from '@locafacil/contracts';
 import { apiGet } from '@/lib/api';
-import { formatarData, rotular } from '@/lib/formato';
+import { formatarData, formatarDataHora, rotular } from '@/lib/formato';
 import { AcoesVistoria } from './acoes-vistoria';
 import { AcompanhamentoVistoria, type ObservadorOpcao } from './acompanhamento-vistoria';
+import { AceitesVistoria, LinhaDoTempoVistoria } from './historico-vistoria';
+import { LaudoVistoria, type DestinoLaudo } from './laudo-vistoria';
 import '../vistorias.css';
 
 const VALIDADE_PADRAO = 15;
@@ -37,8 +44,11 @@ type VistoriaDetalhe = {
   aprovadaEm: string | null;
   laudoAnexoId: string | null;
   link: string;
+  linkLaudo: string;
   pendencias: { ambiente: string; item: string }[];
   destinatarios: DestinatarioConvite[];
+  linhaDoTempo: EventoVistoria[];
+  aceites: AceiteVistoria[];
   avisarEmails: string | null;
   avisarInicio: boolean;
   avisarConclusao: boolean;
@@ -82,6 +92,27 @@ function observadores(
   );
 }
 
+/** O laudo vai para as partes e para quem administra: a lista do convite mais o usuário logado. */
+function destinosDoLaudo(
+  usuario: UsuarioAutenticado,
+  destinatarios: DestinatarioConvite[],
+): DestinoLaudo[] {
+  const lista: DestinoLaudo[] = [
+    ...destinatarios.map((pessoa) => ({
+      email: pessoa.email,
+      nome: pessoa.nome,
+      papel: pessoa.papel as string,
+    })),
+    { email: usuario.email, nome: usuario.nome, papel: 'você' },
+  ];
+
+  return lista.filter(
+    (pessoa, indice) =>
+      lista.findIndex((outro) => outro.email.toLowerCase() === pessoa.email.toLowerCase()) ===
+      indice,
+  );
+}
+
 export default async function PaginaVistoria({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const [vistoria, usuario] = await Promise.all([
@@ -95,6 +126,19 @@ export default async function PaginaVistoria({ params }: { params: Promise<{ id:
       soma + ambiente.itens.reduce((parcial, item) => parcial + item.fotos.length, 0),
     0,
   );
+
+  const envios = vistoria.linhaDoTempo.filter((evento) => evento.tipo === 'LAUDO_ENVIADO');
+  const ultimoEnvio = envios[envios.length - 1];
+  const destinos = destinosDoLaudo(usuario, vistoria.destinatarios);
+
+  // Quem executou recebe o laudo por padrão; o proprietário entra junto quando o contrato o tem.
+  const marcadosLaudo = destinos
+    .filter(
+      (pessoa) =>
+        pessoa.papel === 'LOCADOR' ||
+        pessoa.email.toLowerCase() === (vistoria.conviteEmail ?? '').toLowerCase(),
+    )
+    .map((pessoa) => pessoa.email);
 
   return (
     <>
@@ -127,8 +171,15 @@ export default async function PaginaVistoria({ params }: { params: Promise<{ id:
           </span>
         </div>
         <div className="cartao indicador">
-          <span className="texto-suave">Enviada</span>
-          <strong>{vistoria.enviadaEm ? formatarData(vistoria.enviadaEm) : 'não'}</strong>
+          <span className="texto-suave">Aceites</span>
+          <strong>{vistoria.aceites.length} de 2</strong>
+          <span className="texto-suave">
+            {vistoria.aceites.length === 2
+              ? 'quem vistoriou e a gestão'
+              : vistoria.aceites.length === 1
+                ? 'falta a gestão aprovar'
+                : 'ninguém aceitou ainda'}
+          </span>
         </div>
       </div>
 
@@ -142,7 +193,22 @@ export default async function PaginaVistoria({ params }: { params: Promise<{ id:
           vistoria.conviteEnviadoEm,
           vistoria.conviteExpiraEm,
         )}
+      />
+
+      <AceitesVistoria aceites={vistoria.aceites} />
+
+      <LaudoVistoria
+        id={vistoria.id}
+        situacao={vistoria.situacao}
         pendencias={vistoria.pendencias.length}
+        laudoAnexoId={vistoria.laudoAnexoId}
+        destinos={destinos}
+        marcadosIniciais={marcadosLaudo}
+        ultimoEnvio={
+          ultimoEnvio
+            ? `Último envio em ${formatarDataHora(ultimoEnvio.ocorridoEm)}: ${ultimoEnvio.descricao}`
+            : null
+        }
       />
 
       <AcompanhamentoVistoria
@@ -173,14 +239,7 @@ export default async function PaginaVistoria({ params }: { params: Promise<{ id:
         </div>
       ) : null}
 
-      {vistoria.laudoAnexoId ? (
-        <div className="cartao">
-          <h2>Laudo</h2>
-          <a className="botao" href={`/api/anexos/${vistoria.laudoAnexoId}`}>
-            Baixar laudo em PDF
-          </a>
-        </div>
-      ) : null}
+      <LinhaDoTempoVistoria eventos={vistoria.linhaDoTempo} />
 
       {vistoria.ambientes.map((ambiente) => (
         <section key={ambiente.id}>

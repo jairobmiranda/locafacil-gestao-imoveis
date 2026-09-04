@@ -1,23 +1,7 @@
+import { cpfValido } from '@locafacil/contracts';
+
 /** Validacao dos digitos verificadores. Formato ja foi checado no schema. */
-export function cpfValido(documento: string): boolean {
-  if (documento.length !== 11 || /^(\d)\1{10}$/.test(documento)) {
-    return false;
-  }
-
-  const digito = (ate: number): number => {
-    let soma = 0;
-
-    for (let posicao = 0; posicao < ate; posicao += 1) {
-      soma += Number(documento[posicao]) * (ate + 1 - posicao);
-    }
-
-    const resto = (soma * 10) % 11;
-
-    return resto === 10 ? 0 : resto;
-  };
-
-  return digito(9) === Number(documento[9]) && digito(10) === Number(documento[10]);
-}
+export { cpfValido };
 
 /**
  * CNPJ alfanumerico (IN RFB 2.229/2024): as 12 primeiras posicoes podem ter letras e o valor

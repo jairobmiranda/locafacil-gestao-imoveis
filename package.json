@@ -20,7 +20,8 @@
     "db:deploy": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
-    "smtp:testar": "tsx scripts/testar-smtp.mts"
+    "smtp:testar": "tsx scripts/testar-smtp.mts",
+    "laudo:testar": "tsx --tsconfig apps/api/tsconfig.json scripts/testar-laudo.mts"
   },
   "dependencies": {
     "@prisma/client": "^6.2.1",

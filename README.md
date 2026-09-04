@@ -95,6 +95,7 @@ docker/                Dockerfiles de build (API e Web)
 | `npm run db:deploy` | aplica migrations pendentes (produção) |
 | `npm run db:seed` | popula dados iniciais |
 | `npm run db:studio` | abre o Prisma Studio |
+| `npm run laudo:testar` | gera `laudo-exemplo.pdf` com dados falsos, para conferir o layout |
 
 ## Variáveis de ambiente
 

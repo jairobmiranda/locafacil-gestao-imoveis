@@ -57,7 +57,7 @@ Regras de sessão que **não podem regredir** (já causaram loop de redirecionam
 Nenhuma solução pode depender de o usuário limpar cookies ou abrir aba anônima.
 
 - Rotas públicas do middleware: `/login`, `/pagamento`, `/sair`, `/vistoria`, `/api/vistoria`,
-  `/api/vistoria-foto` (lista em [apps/web/src/middleware.ts](apps/web/src/middleware.ts)).
+  `/api/vistoria-foto`, `/laudo` (lista em [apps/web/src/middleware.ts](apps/web/src/middleware.ts)).
 - Service worker: **nunca** `skipWaiting()` + `clients.claim()` (quebrou chunks em voo).
   Registrar apenas após `load`.
 - Componente com `useSearchParams` fica dentro de `<Suspense>`, senão a rota faz bailout para CSR.
@@ -74,6 +74,11 @@ Nenhuma solução pode depender de o usuário limpar cookies ou abrir aba anôni
 - Senha do banco tem `@`: percent-encode na URL (`%40`).
 - Se aparecer "migration was modified after it was applied", **não resetar**:
   `DELETE FROM _prisma_migrations WHERE rolled_back_at IS NOT NULL`.
+- Enxurrada de erros de tipo do Prisma (`Prisma.Decimal`, `Prisma.XWhereInput`, `EstadoCivil`,
+  `tx` implicitamente `any`) quase sempre é o client gerado virar stub: confira
+  `node_modules/.prisma/client/index.d.ts`, que deve ter megabytes, não 4 KB. O conserto é
+  `npx.cmd prisma generate`, com a API parada: no Windows o processo em execução segura o
+  `query_engine-windows.dll.node` e a geração cai no stub em vez de falhar com erro.
 
 ## Domínios sensíveis
 
@@ -85,6 +90,21 @@ Nenhuma solução pode depender de o usuário limpar cookies ou abrir aba anôni
   Smoke test: `npx.cmd tsx scripts/testar-minuta.mts`.
 - **Vistorias**: roteiros em `roteiros.ts`, link público com HMAC, upload via proxy do Next,
   EXIF lido antes da compressão no cliente (canvas apaga data e GPS).
+  Concluir pelo link público **é** o aceite de quem vistoriou, e aprovar no painel é o aceite da
+  gestão: um registro por papel em `vistoria_aceites`, com IP, navegador e o SHA-256 do conteúdo
+  aceito (`resumoConteudo`). Conteúdo alterado depois muda o hash e o laudo mostra o aceite como
+  desatualizado. Por isso `lib/api.ts` e o proxy de `/api/vistoria` repassam `x-forwarded-for` e
+  `user-agent`: sem isso o aceite gravaria o endereço do próprio servidor web.
+  Cada passo vira linha em `vistoria_eventos` (a linha do tempo do laudo); as fotos não viram
+  evento, saem agrupadas de `vistoria_fotos`. A exceção é a remoção: quem executa pode apagar
+  foto pelo próprio link, e como a imagem some do manifesto o `FOTO_REMOVIDA` guarda ambiente,
+  item e o resumo do que existiu. Enviar o laudo **sempre regera o PDF** e substitui o
+  anexo anterior; acima de 8 MB o e-mail leva só o link assinado (`/laudo/<token>`, propósito
+  `laudo`, diferente do token do convite).
+  Layout do PDF em `laudo-desenho.ts` (paleta e primitivas) e `laudo.service.ts` (páginas).
+  Conferir sem banco nem MinIO: `npm.cmd run laudo:testar` gera `laudo-exemplo.pdf`. Texto abaixo
+  da margem inferior faz o PDFKit abrir página nova: o rodapé zera `page.margins.bottom` antes de
+  escrever.
 - **Cobrança**: para testar sem esperar o cron, com `CRONS_ATIVOS=false` e
   `EMAIL_ENVIO_ATIVO=false`, chamar em ordem `POST /api/contratos/gerar-cobrancas`,
   `POST /api/cobranca/agendar`, `POST /api/cobranca/processar-fila` e conferir em

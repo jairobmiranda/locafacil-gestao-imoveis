@@ -19,3 +19,6 @@ Thumbs.db
 coverage/
 .vscode/*
 !.vscode/extensions.json
+
+# Saída do smoke test do laudo
+laudo-exemplo.pdf

@@ -11,27 +11,34 @@ import {
   Post,
   Put,
   Query,
+  Req,
   Res,
   StreamableFile,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import {
   acompanharVistoriaSchema,
   criarVistoriaSchema,
   enviarConviteSchema,
+  enviarLaudoSchema,
   listarVistoriasSchema,
   recusarVistoriaSchema,
   responderItemSchema,
   type AcompanharVistoriaDto,
   type CriarVistoriaDto,
   type EnviarConviteDto,
+  type EnviarLaudoDto,
   type ListarVistoriasDto,
   type RecusarVistoriaDto,
   type ResponderItemDto,
+  type UsuarioAutenticado,
 } from '@locafacil/contracts';
+import { UsuarioLogado } from '../auth/usuario-logado.decorator';
+import { contextoDaRequisicao } from '../comum/requisicao';
 import { ZodValidationPipe } from '../comum/zod-validation.pipe';
 import { ConviteVistoriaService } from './convite-vistoria.service';
+import { EventosVistoriaService } from './eventos-vistoria.service';
 import { LaudoService } from './laudo.service';
 import { VistoriasService } from './vistorias.service';
 
@@ -43,6 +50,7 @@ export class VistoriasController {
     private readonly vistorias: VistoriasService,
     private readonly convite: ConviteVistoriaService,
     private readonly laudo: LaudoService,
+    private readonly eventos: EventosVistoriaService,
   ) {}
 
   @Get()
@@ -59,23 +67,30 @@ export class VistoriasController {
 
   @Post()
   @ApiOperation({ summary: 'Cria a vistoria e materializa o roteiro' })
-  criar(@Body(new ZodValidationPipe(criarVistoriaSchema)) dados: CriarVistoriaDto) {
-    return this.vistorias.criar(dados);
+  criar(
+    @Body(new ZodValidationPipe(criarVistoriaSchema)) dados: CriarVistoriaDto,
+    @UsuarioLogado() usuario: UsuarioAutenticado,
+  ) {
+    return this.vistorias.criar(dados, usuario.email);
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Detalha a vistoria com ambientes, itens e fotos' })
+  @ApiOperation({ summary: 'Detalha a vistoria com ambientes, itens, fotos, aceites e histórico' })
   async buscar(@Param('id', ParseUUIDPipe) id: string) {
-    const [vistoria, destinatarios] = await Promise.all([
-      this.vistorias.buscar(id),
+    const [dossie, destinatarios] = await Promise.all([
+      this.vistorias.dossie(id),
       this.vistorias.destinatariosConvite(id),
     ]);
 
     return {
-      ...vistoria,
+      ...dossie.vistoria,
       link: this.convite.linkPara(id),
-      pendencias: this.vistorias.pendencias(vistoria),
+      linkLaudo: this.laudo.linkPara(id),
+      pendencias: this.vistorias.pendencias(dossie.vistoria),
       destinatarios,
+      linhaDoTempo: dossie.linhaDoTempo,
+      aceites: dossie.aceites,
+      hashConteudo: dossie.hashConteudo,
     };
   }
 
@@ -85,9 +100,12 @@ export class VistoriasController {
   async enviarConvite(
     @Param('id', ParseUUIDPipe) id: string,
     @Body(new ZodValidationPipe(enviarConviteSchema)) dados: EnviarConviteDto,
+    @UsuarioLogado() usuario: UsuarioAutenticado,
+    @Req() requisicao: Request,
   ) {
     const vistoria = await this.vistorias.registrarConvite(id, dados);
     const completa = await this.vistorias.buscar(id);
+    const complemento = completa.situacao === 'RECUSADA' ? completa.motivoRecusa : null;
 
     await this.convite.enviar({
       vistoriaId: id,
@@ -97,7 +115,20 @@ export class VistoriasController {
       imovel: completa.imovel.apelido,
       expiraEm: vistoria.conviteExpiraEm ?? new Date(),
       // Convite disparado com complemento em aberto ja leva o pedido junto, num e-mail so.
-      motivoComplemento: completa.situacao === 'RECUSADA' ? completa.motivoRecusa : null,
+      motivoComplemento: complemento,
+    });
+
+    const destinos = [dados.email, ...(dados.copias ?? [])].join(', ');
+
+    await this.eventos.registrar({
+      vistoriaId: id,
+      tipo: 'CONVITE_ENVIADO',
+      origem: 'PAINEL',
+      descricao:
+        (complemento ? 'Convite reenviado com o pedido de complemento para ' : 'Convite enviado para ') +
+        destinos,
+      autor: usuario.email,
+      contexto: contextoDaRequisicao(requisicao),
     });
 
     return vistoria;
@@ -128,15 +159,29 @@ export class VistoriasController {
   removerFoto(
     @Param('id', ParseUUIDPipe) id: string,
     @Param('fotoId', ParseUUIDPipe) fotoId: string,
+    @UsuarioLogado() usuario: UsuarioAutenticado,
+    @Req() requisicao: Request,
   ) {
-    return this.vistorias.removerFoto(id, fotoId);
+    return this.vistorias.removerFoto(id, fotoId, {
+      origem: 'PAINEL',
+      autor: usuario.email,
+      contexto: contextoDaRequisicao(requisicao),
+    });
   }
 
   @Post(':id/aprovar')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Aprova a vistoria enviada' })
-  aprovar(@Param('id', ParseUUIDPipe) id: string) {
-    return this.vistorias.aprovar(id);
+  @ApiOperation({ summary: 'Aprova a vistoria enviada e registra o aceite da gestão' })
+  aprovar(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UsuarioLogado() usuario: UsuarioAutenticado,
+    @Req() requisicao: Request,
+  ) {
+    return this.vistorias.aprovar(
+      id,
+      { nome: usuario.nome, email: usuario.email },
+      contextoDaRequisicao(requisicao),
+    );
   }
 
   @Post(':id/recusar')
@@ -145,8 +190,11 @@ export class VistoriasController {
   async recusar(
     @Param('id', ParseUUIDPipe) id: string,
     @Body(new ZodValidationPipe(recusarVistoriaSchema)) dados: RecusarVistoriaDto,
+    @UsuarioLogado() usuario: UsuarioAutenticado,
+    @Req() requisicao: Request,
   ) {
-    const vistoria = await this.vistorias.recusar(id, dados.motivo);
+    const contexto = contextoDaRequisicao(requisicao);
+    const vistoria = await this.vistorias.recusar(id, dados.motivo, usuario.email, contexto);
     const destinos = VistoriasService.destinosDoConvite(vistoria);
 
     // Sem convite enviado nao ha para quem devolver: a recusa fica registrada e o e-mail sai
@@ -169,8 +217,24 @@ export class VistoriasController {
   @Post(':id/laudo')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Gera o laudo em PDF e arquiva como anexo' })
-  gerarLaudo(@Param('id', ParseUUIDPipe) id: string) {
-    return this.laudo.gerar(id);
+  gerarLaudo(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UsuarioLogado() usuario: UsuarioAutenticado,
+    @Req() requisicao: Request,
+  ) {
+    return this.laudo.gerar(id, usuario.email, contextoDaRequisicao(requisicao));
+  }
+
+  @Post(':id/laudo/enviar')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Gera o laudo atual e envia por e-mail, anexado ou por link' })
+  enviarLaudo(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(new ZodValidationPipe(enviarLaudoSchema)) dados: EnviarLaudoDto,
+    @UsuarioLogado() usuario: UsuarioAutenticado,
+    @Req() requisicao: Request,
+  ) {
+    return this.laudo.enviar(id, dados, usuario.email, contextoDaRequisicao(requisicao));
   }
 
   @Get(':id/fotos/:fotoId/conteudo')

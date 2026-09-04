@@ -1,3 +1,4 @@
+import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { API_URL } from './configuracao';
 import { obterToken } from './sessao';
@@ -26,6 +27,26 @@ function montarUrl(caminho: string, query?: Record<string, unknown>): string {
   return url.toString();
 }
 
+/**
+ * Quem está do outro lado da tela. A API grava isso nos aceites da vistoria, e sem repassar
+ * aqui o registro sairia com o endereço do próprio servidor web.
+ */
+async function origemDoNavegador(): Promise<Record<string, string>> {
+  try {
+    const cabecalhos = await headers();
+    const encaminhado = cabecalhos.get('x-forwarded-for') ?? cabecalhos.get('x-real-ip');
+    const agente = cabecalhos.get('user-agent');
+
+    return {
+      ...(encaminhado ? { 'x-forwarded-for': encaminhado } : {}),
+      ...(agente ? { 'user-agent': agente } : {}),
+    };
+  } catch {
+    // Fora do ciclo de uma requisição (build, por exemplo) não há origem para repassar.
+    return {};
+  }
+}
+
 /** Executado apenas no servidor, para o token nunca chegar ao bundle do navegador. */
 export async function api<T>(caminho: string, opcoes: Opcoes = {}): Promise<T> {
   const token = await obterToken();
@@ -36,6 +57,7 @@ export async function api<T>(caminho: string, opcoes: Opcoes = {}): Promise<T> {
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(await origemDoNavegador()),
       ...resto.headers,
     },
     cache: 'no-store',

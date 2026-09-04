@@ -8,6 +8,7 @@ const ROTAS_PUBLICAS = [
   '/vistoria',
   '/api/vistoria',
   '/api/vistoria-foto',
+  '/laudo',
 ];
 
 /**

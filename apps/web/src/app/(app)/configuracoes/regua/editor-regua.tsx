@@ -320,6 +320,10 @@ export function EditorRegua({
             <label className="campo">
               Hora do envio
               <input name="horaEnvio" type="time" defaultValue={emEdicao?.horaEnvio ?? '09:00'} />
+              <small className="texto-suave">
+                Horário de Brasília. Etapa que passou desta hora sai no ciclo seguinte, dentro da
+                janela de recuperação.
+              </small>
             </label>
 
             <label className="campo">

@@ -293,6 +293,7 @@ export async function salvarParametrosCobranca(
   try {
     await apiPut('/cobranca/configuracao/parametros', {
       maximoEmailsDia: String(dados.get('maximoEmailsDia') ?? '1'),
+      janelaRecuperacaoDias: String(dados.get('janelaRecuperacaoDias') ?? '3'),
     });
   } catch (erro) {
     return traduzir(erro);
@@ -300,7 +301,7 @@ export async function salvarParametrosCobranca(
 
   revalidatePath('/configuracoes/notificacoes');
 
-  return { sucesso: 'Limite salvo' };
+  return { sucesso: 'Parâmetros salvos' };
 }
 
 export async function agendarRegua(): Promise<void> {

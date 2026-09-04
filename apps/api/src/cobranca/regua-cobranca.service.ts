@@ -1,11 +1,18 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type { EnviarCobrancaManualDto } from '@locafacil/contracts';
-import { apenasData, diferencaEmDias, proximoDiaUtil, somarDias } from '../comum/datas';
+import {
+  apenasData,
+  diferencaEmDias,
+  instanteLocal,
+  proximoDiaUtil,
+  somarDias,
+} from '../comum/datas';
 import { FeriadosService } from '../feriados/feriados.service';
 import { calcularEncargos } from '../lancamentos/encargos';
 import { PixService } from '../pix/pix.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { ParametrosCobrancaService } from './parametros-cobranca.service';
 import {
   montarVariaveis,
   montarVariaveisConsolidado,
@@ -16,6 +23,7 @@ import {
 type ResumoRegua = {
   cobrancasAvaliadas: number;
   notificacoesAgendadas: number;
+  notificacoesRecuperadas: number;
   semDestinatario: number;
 };
 
@@ -40,6 +48,13 @@ const INCLUI_COBRANCA = {
 
 type Cobranca = Prisma.LancamentoGetPayload<{ include: typeof INCLUI_COBRANCA }>;
 
+/** `atraso` em dias entre a data prevista da etapa e hoje: zero e o disparo no dia. */
+type EtapaDevida = { ocorrencia: number; atraso: number };
+
+function chaveEtapa(lancamentoId: string, regraId: string, ocorrencia: number): string {
+  return `${lancamentoId}:${regraId}:${ocorrencia}`;
+}
+
 /** Guardado separado por virgula porque e assim que o envio le o campo. */
 function copiasDoContrato(emailsCopia: string | null | undefined): string | undefined {
   const enderecos = (emailsCopia ?? '')
@@ -58,22 +73,30 @@ export class ReguaCobrancaService {
     private readonly prisma: PrismaService,
     private readonly pix: PixService,
     private readonly feriados: FeriadosService,
+    private readonly parametros: ParametrosCobrancaService,
   ) {}
 
-  async agendar(referencia = new Date()): Promise<ResumoRegua> {
+  /**
+   * `contratoId` restringe a varredura a um contrato so, o que permite rodar a regua
+   * na hora em que o contrato e ativado, sem esperar o cron da madrugada.
+   */
+  async agendar(referencia = new Date(), contratoId?: string): Promise<ResumoRegua> {
     const hoje = apenasData(referencia);
     const feriados = await this.feriados.chaves();
+    const janelaRecuperacao = await this.parametros.janelaRecuperacaoDias();
 
     const cobrancas = await this.prisma.lancamento.findMany({
       where: {
         natureza: 'ENTRADA',
         situacao: { in: ['PENDENTE', 'ATRASADO'] },
         vencimento: { not: null },
-        contratoId: { not: null },
+        contratoId: contratoId ?? { not: null },
       },
       include: INCLUI_COBRANCA,
       orderBy: { vencimento: 'asc' },
     });
+
+    const jaAgendadas = await this.etapasJaAgendadas(cobrancas.map((cobranca) => cobranca.id));
 
     const reguaPadrao = await this.prisma.reguaCobranca.findFirst({
       where: { padrao: true, ativa: true },
@@ -86,6 +109,7 @@ export class ReguaCobrancaService {
     const resumo: ResumoRegua = {
       cobrancasAvaliadas: cobrancas.length,
       notificacoesAgendadas: 0,
+      notificacoesRecuperadas: 0,
       semDestinatario: 0,
     };
 
@@ -108,9 +132,19 @@ export class ReguaCobrancaService {
           .filter((cobranca) => !regra.apenasSeSituacao || regra.apenasSeSituacao === cobranca.situacao)
           .map((cobranca) => ({
             cobranca,
-            ocorrencia: this.ocorrenciaDeHoje(regra, cobranca.vencimento as Date, hoje, feriados),
+            devida: this.ocorrenciaDevida(
+              regra,
+              cobranca.vencimento as Date,
+              hoje,
+              feriados,
+              janelaRecuperacao,
+            ),
           }))
-          .filter((item): item is { cobranca: Cobranca; ocorrencia: number } => item.ocorrencia !== null);
+          .filter(
+            (item): item is { cobranca: Cobranca; devida: EtapaDevida } =>
+              item.devida !== null &&
+              !jaAgendadas.has(chaveEtapa(item.cobranca.id, regra.id, item.devida.ocorrencia)),
+          );
 
         if (elegiveis.length === 0) {
           continue;
@@ -119,12 +153,13 @@ export class ReguaCobrancaService {
         // A etapa dispara por uma parcela, mas o e-mail mostra tudo que esta em aberto no
         // contrato: parcelas de meses diferentes nunca cairiam na mesma etapa no mesmo dia.
         if (doContrato.length > 1 && regua.modeloConsolidado) {
+          const primeiroElegivel = elegiveis[0] as { cobranca: Cobranca; devida: EtapaDevida };
           const agendado = await this.agendarConsolidado(
             doContrato,
-            elegiveis[0]?.cobranca as Cobranca,
+            primeiroElegivel.cobranca,
             regra,
             regua.modeloConsolidado,
-            elegiveis[0]?.ocorrencia ?? 1,
+            primeiroElegivel.devida.ocorrencia,
             contato,
             hoje,
             feriados,
@@ -132,6 +167,7 @@ export class ReguaCobrancaService {
 
           if (agendado) {
             resumo.notificacoesAgendadas += 1;
+            resumo.notificacoesRecuperadas += primeiroElegivel.devida.atraso > 0 ? 1 : 0;
             // Um consolidado por contrato por dia; as demais etapas nao repetem a mensagem.
             break;
           }
@@ -139,11 +175,11 @@ export class ReguaCobrancaService {
           continue;
         }
 
-        for (const { cobranca, ocorrencia } of elegiveis) {
+        for (const { cobranca, devida } of elegiveis) {
           const agendado = await this.agendarNotificacao(
             cobranca,
             regra,
-            ocorrencia,
+            devida.ocorrencia,
             contato,
             hoje,
             feriados,
@@ -151,16 +187,43 @@ export class ReguaCobrancaService {
 
           if (agendado) {
             resumo.notificacoesAgendadas += 1;
+            resumo.notificacoesRecuperadas += devida.atraso > 0 ? 1 : 0;
           }
         }
       }
     }
 
+    const recuperadas = resumo.notificacoesRecuperadas
+      ? `, ${resumo.notificacoesRecuperadas} recuperada(s) de etapa vencida`
+      : '';
+
     this.logger.log(
-      `Régua: ${resumo.notificacoesAgendadas} notificação(ões) agendada(s) sobre ${resumo.cobrancasAvaliadas} cobrança(s)`,
+      `Régua: ${resumo.notificacoesAgendadas} notificação(ões) agendada(s) sobre ${resumo.cobrancasAvaliadas} cobrança(s)${recuperadas}`,
     );
 
     return resumo;
+  }
+
+  /**
+   * As etapas ja gravadas. O indice unico continua sendo a garantia contra duplicidade,
+   * mas conferir antes evita uma violacao por cobranca por regra a cada rodada agora que
+   * a regua reavalia etapas passadas.
+   */
+  private async etapasJaAgendadas(lancamentoIds: string[]): Promise<Set<string>> {
+    if (lancamentoIds.length === 0) {
+      return new Set();
+    }
+
+    const existentes = await this.prisma.notificacao.findMany({
+      where: { lancamentoId: { in: lancamentoIds }, regraCobrancaId: { not: null } },
+      select: { lancamentoId: true, regraCobrancaId: true, ocorrencia: true },
+    });
+
+    return new Set(
+      existentes.map((item) =>
+        chaveEtapa(item.lancamentoId as string, item.regraCobrancaId as string, item.ocorrencia),
+      ),
+    );
   }
 
   /** Mantem a ordem por vencimento dentro de cada contrato: a mais antiga encabeca o consolidado. */
@@ -183,14 +246,23 @@ export class ReguaCobrancaService {
 
   /**
    * A ocorrencia 1 cai em `vencimento util + diasOffset`. Havendo repeticao, as seguintes
-   * caem a cada `intervaloRepeticaoDias`. Retorna o numero da ocorrencia que bate com hoje.
+   * caem a cada `intervaloRepeticaoDias`.
+   *
+   * Retorna a ultima ocorrencia ja devida, e nao apenas a que cai exatamente hoje: um
+   * contrato cadastrado depois da hora do envio so ganha cobranca no dia seguinte, e com
+   * a comparacao exata a etapa do dia do vencimento se perdia para sempre. O mesmo vale
+   * para API parada na hora do cron ou cobranca criada retroativamente.
+   *
+   * `janelaRecuperacaoDias` limita o quanto a regua volta atras, para um contrato antigo
+   * recem cadastrado nao disparar de uma vez etapas de meses passados.
    */
-  private ocorrenciaDeHoje(
+  private ocorrenciaDevida(
     regra: { diasOffset: number; intervaloRepeticaoDias: number | null; maximoRepeticoes: number | null },
     vencimento: Date,
     hoje: Date,
     feriados: ReadonlySet<string>,
-  ): number | null {
+    janelaRecuperacaoDias: number,
+  ): EtapaDevida | null {
     const primeira = somarDias(proximoDiaUtil(vencimento, feriados), regra.diasOffset);
     const distancia = diferencaEmDias(primeira, hoje);
 
@@ -198,17 +270,18 @@ export class ReguaCobrancaService {
       return null;
     }
 
-    if (distancia === 0) {
-      return 1;
-    }
+    const intervalo = regra.intervaloRepeticaoDias ?? 0;
+    const ocorrencia = intervalo
+      ? Math.min(
+          Math.floor(distancia / intervalo) + 1,
+          regra.maximoRepeticoes ?? Number.MAX_SAFE_INTEGER,
+        )
+      : 1;
 
-    if (!regra.intervaloRepeticaoDias || distancia % regra.intervaloRepeticaoDias !== 0) {
-      return null;
-    }
+    // Dias entre a data em que a etapa deveria ter saido e hoje.
+    const atraso = distancia - (ocorrencia - 1) * intervalo;
 
-    const ocorrencia = distancia / regra.intervaloRepeticaoDias + 1;
-
-    return regra.maximoRepeticoes && ocorrencia > regra.maximoRepeticoes ? null : ocorrencia;
+    return atraso <= janelaRecuperacaoDias ? { ocorrencia, atraso } : null;
   }
 
   private async agendarNotificacao(
@@ -223,9 +296,8 @@ export class ReguaCobrancaService {
     const assunto = renderizar(regra.modeloEmail.assunto, variaveis);
     const corpoHtml = renderizar(regra.modeloEmail.corpoHtml, variaveis);
 
-    const [hora, minuto] = regra.horaEnvio.split(':').map(Number);
-    const agendadoPara = new Date(hoje);
-    agendadoPara.setUTCHours(hora ?? 9, minuto ?? 0, 0, 0);
+    // Hora ja passada fica no passado de proposito: a fila despacha no ciclo seguinte.
+    const agendadoPara = instanteLocal(hoje, regra.horaEnvio);
 
     try {
       await this.prisma.notificacao.create({
@@ -279,9 +351,7 @@ export class ReguaCobrancaService {
     const pixPayload = await this.pixConsolidado(cobrancas, hoje, feriados);
     const variaveis = montarVariaveisConsolidado(cobrancas, contato, hoje, pixPayload, feriados);
 
-    const [hora, minuto] = regra.horaEnvio.split(':').map(Number);
-    const agendadoPara = new Date(hoje);
-    agendadoPara.setUTCHours(hora ?? 9, minuto ?? 0, 0, 0);
+    const agendadoPara = instanteLocal(hoje, regra.horaEnvio);
 
     try {
       await this.prisma.notificacao.create({

@@ -137,6 +137,14 @@ Observações:
 | `regua-cobranca` | `0 5 * * *` | enfileira notificações conforme a régua |
 | `envio-email` | `*/10 * * * *` | envia as notificações pendentes em lotes |
 
+Os horários seguem o fuso de `TZ`, e a hora de envio configurada em cada etapa da régua
+também. Ativar um contrato gera as cobranças dele e roda a régua na hora, sem esperar a
+madrugada seguinte.
+
+Etapa que passou sem a régua rodar não se perde: ela é recuperada no ciclo seguinte,
+respeitando a janela em **Configurações > Notificações > Parâmetros da régua** (padrão 3
+dias, zero desliga a recuperação).
+
 ## Deploy
 
 Deploy no CapRover usando os arquivos `captain-definition-api` e

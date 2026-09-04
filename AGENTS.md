@@ -42,7 +42,9 @@ O contrato é a fonte única de tipos e validação nas duas pontas.
   antes de o `ConfigModule` carregar o `.env`.
 - Banco e containers em UTC. Datas de negócio são `@db.Date` e toda manipulação usa
   [apps/api/src/comum/datas.ts](apps/api/src/comum/datas.ts) (`Date.UTC`, `timeZone: 'UTC'`).
-  O único ponto que conhece `America/Sao_Paulo` é o `timeZone` dos `@Cron`.
+  Só dois pontos conhecem `America/Sao_Paulo`: o `timeZone` dos `@Cron` e o `instanteLocal`
+  de `datas.ts`, usado na `horaEnvio` da régua. Instante (`agendadoPara`) não é data de
+  negócio: gravar a hora configurada direto em UTC atrasava o envio em 3 horas.
 - `apps/api/tsconfig.json` precisa de `"incremental": false`: com `.tsbuildinfo` o build passa
   sem gerar `dist`.
 
@@ -108,7 +110,17 @@ Nenhuma solução pode depender de o usuário limpar cookies ou abrir aba anôni
 - **Cobrança**: para testar sem esperar o cron, com `CRONS_ATIVOS=false` e
   `EMAIL_ENVIO_ATIVO=false`, chamar em ordem `POST /api/contratos/gerar-cobrancas`,
   `POST /api/cobranca/agendar`, `POST /api/cobranca/processar-fila` e conferir em
-  `GET /api/cobranca/notificacoes`.
+  `GET /api/cobranca/notificacoes`. O calendário da régua roda sem banco:
+  `npm.cmd run regua:testar`.
+  A régua **não** compara a data exata da etapa com hoje. `ocorrenciaDevida` devolve a
+  última ocorrência já vencida dentro da janela de recuperação (`cobranca.janela_recuperacao_dias`,
+  padrão 3), senão a etapa do dia do vencimento se perdia para sempre quando a cobrança
+  nascia depois do cron (contrato cadastrado no próprio dia, API parada, lançamento
+  retroativo). Quem impede a repetição é o índice único `(lancamento, regra, ocorrencia)`,
+  conferido antes por `etapasJaAgendadas`. Ampliar a janela sem necessidade faz um contrato
+  antigo recém cadastrado disparar etapas de meses atrás.
+  Ativar contrato chama `cobrarDesdeJa`: gera e agenda na hora, só daquele contrato,
+  e nunca derruba a ativação se falhar.
 
 ## Deploy (CapRover)
 

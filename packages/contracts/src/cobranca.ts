@@ -64,6 +64,8 @@ export const testarEmailSchema = z.object({
 export const salvarParametrosCobrancaSchema = z.object({
   /** Teto diario de cobrancas por endereco, para nao inundar quem tem varias parcelas em aberto. */
   maximoEmailsDia: z.coerce.number().int().min(1).max(10),
+  /** Dias que a regua volta atras para recuperar uma etapa que passou sem ela rodar. */
+  janelaRecuperacaoDias: z.coerce.number().int().min(0).max(30).default(3),
 });
 
 /** Aceita varios enderecos separados por ponto e virgula ou virgula. */

@@ -69,6 +69,7 @@ export class CobrancaController {
       envioAtivo: this.config.get<string>('EMAIL_ENVIO_ATIVO') === 'true',
       emailsGestor: await this.destinatarios.listar(),
       maximoEmailsDia: await this.parametros.maximoEmailsDia(),
+      janelaRecuperacaoDias: await this.parametros.janelaRecuperacaoDias(),
     };
   }
 
@@ -78,7 +79,7 @@ export class CobrancaController {
     @Body(new ZodValidationPipe(salvarParametrosCobrancaSchema))
     dados: SalvarParametrosCobrancaDto,
   ) {
-    return this.parametros.salvarMaximoEmailsDia(dados.maximoEmailsDia);
+    return this.parametros.salvar(dados);
   }
 
   @Put('configuracao/emails-gestor')

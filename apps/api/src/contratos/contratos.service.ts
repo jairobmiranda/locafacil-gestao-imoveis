@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
@@ -13,8 +14,10 @@ import type {
   Paginado,
   ReajustarContratoDto,
 } from '@locafacil/contracts';
+import { ReguaCobrancaService } from '../cobranca/regua-cobranca.service';
 import { apenasData, somarDias, somarMeses } from '../comum/datas';
 import { PrismaService } from '../prisma/prisma.service';
+import { GeracaoCobrancasService } from './geracao-cobrancas.service';
 
 const INCLUI_DETALHE = {
   imovel: { select: { id: true, apelido: true, cidade: true, uf: true, tipo: true } },
@@ -25,7 +28,13 @@ const INCLUI_DETALHE = {
 
 @Injectable()
 export class ContratosService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(ContratosService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly geracao: GeracaoCobrancasService,
+    private readonly regua: ReguaCobrancaService,
+  ) {}
 
   async listar(filtros: ListarContratosDto): Promise<Paginado<unknown>> {
     const where: Prisma.ContratoWhereInput = {
@@ -71,7 +80,7 @@ export class ContratosService {
       await this.garantirImovelLivre(contrato.imovelId, contrato.dataInicio, contrato.dataFim);
     }
 
-    return this.prisma.contrato.create({
+    const criado = await this.prisma.contrato.create({
       data: {
         ...contrato,
         proximoReajusteEm: somarMeses(contrato.dataInicio, contrato.intervaloReajusteMeses),
@@ -80,6 +89,12 @@ export class ContratosService {
       },
       include: INCLUI_DETALHE,
     });
+
+    if (criado.situacao === 'ATIVO') {
+      await this.cobrarDesdeJa(criado.id);
+    }
+
+    return criado;
   }
 
   async atualizar(id: string, dados: AtualizarContratoDto) {
@@ -100,7 +115,7 @@ export class ContratosService {
       );
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    const atualizado = await this.prisma.$transaction(async (tx) => {
       if (itens) {
         await tx.itemContrato.deleteMany({ where: { contratoId: id } });
       }
@@ -119,6 +134,12 @@ export class ContratosService {
         include: INCLUI_DETALHE,
       });
     });
+
+    if (atualizado.situacao === 'ATIVO' && atual.situacao !== 'ATIVO') {
+      await this.cobrarDesdeJa(id);
+    }
+
+    return atualizado;
   }
 
   async ativar(id: string) {
@@ -145,7 +166,7 @@ export class ContratosService {
       id,
     );
 
-    return this.prisma.$transaction(async (tx) => {
+    const ativado = await this.prisma.$transaction(async (tx) => {
       await tx.imovel.update({ where: { id: contrato.imovelId }, data: { situacao: 'ALUGADO' } });
 
       return tx.contrato.update({
@@ -154,6 +175,29 @@ export class ContratosService {
         include: INCLUI_DETALHE,
       });
     });
+
+    await this.cobrarDesdeJa(id);
+
+    return ativado;
+  }
+
+  /**
+   * Contrato que entra em vigor no proprio dia do vencimento nao pode esperar o cron da
+   * madrugada seguinte: ai a etapa do dia do vencimento ja teria passado. Gera a cobranca
+   * e roda a regua so para este contrato, na hora.
+   *
+   * Falha aqui nao derruba a ativacao: o cron do dia seguinte refaz o trabalho e a regua
+   * recupera a etapa dentro da janela de recuperacao.
+   */
+  private async cobrarDesdeJa(contratoId: string): Promise<void> {
+    try {
+      await this.geracao.gerar(new Date(), contratoId);
+      await this.regua.agendar(new Date(), contratoId);
+    } catch (erro) {
+      this.logger.error(
+        `Contrato ${contratoId} ativado, mas a cobrança imediata falhou: ${(erro as Error).message}`,
+      );
+    }
   }
 
   /** Reajuste e manual: o sistema avisa e aplica o percentual informado, sem consultar indice. */

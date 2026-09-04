@@ -54,12 +54,14 @@ export function PainelEnvios({
   envioAtivo,
   emailsGestor,
   maximoEmailsDia,
+  janelaRecuperacaoDias,
 }: {
   notificacoes: Notificacao[];
   pendentes: Notificacao[];
   envioAtivo: boolean;
   emailsGestor: string[];
   maximoEmailsDia: number;
+  janelaRecuperacaoDias: number;
 }) {
   const [estado, acao] = useActionState<EstadoFormulario, FormData>(testarEmail, {});
   const [estadoGestor, acaoGestor] = useActionState<EstadoFormulario, FormData>(
@@ -132,12 +134,18 @@ export function PainelEnvios({
 
       <form action={acaoParametros} className="cartao formulario">
         <div className="cabecalho-secao">
-          <h2>Limite de cobranças</h2>
+          <h2>Parâmetros da régua</h2>
         </div>
 
         <p className="texto-suave">
           Quando o inquilino tem várias parcelas em aberto, a régua agenda uma cobrança para cada
-          uma. Este limite evita a enxurrada: o que passar do teto espera o dia seguinte.
+          uma. O limite diário evita a enxurrada: o que passar do teto espera o dia seguinte.
+        </p>
+
+        <p className="texto-suave">
+          A recuperação cobre as etapas que passaram sem a régua rodar, como o contrato cadastrado
+          depois da hora do envio. Ela volta até este número de dias e agenda a etapa perdida no
+          primeiro ciclo seguinte. Zero desliga a recuperação: a etapa só sai no dia exato.
         </p>
 
         <div className="linha-teste">
@@ -149,6 +157,16 @@ export function PainelEnvios({
               min={1}
               max={10}
               defaultValue={maximoEmailsDia}
+            />
+          </label>
+          <label className="campo">
+            Recuperar etapas de até (dias)
+            <input
+              name="janelaRecuperacaoDias"
+              type="number"
+              min={0}
+              max={30}
+              defaultValue={janelaRecuperacaoDias}
             />
           </label>
           <BotaoSalvar />

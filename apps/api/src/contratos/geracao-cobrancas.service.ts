@@ -20,11 +20,13 @@ export class GeracaoCobrancasService {
     private readonly feriados: FeriadosService,
   ) {}
 
-  async gerar(referencia = new Date()): Promise<ResumoGeracao> {
+  /** `contratoId` gera so o do contrato informado, no momento em que ele e ativado. */
+  async gerar(referencia = new Date(), contratoId?: string): Promise<ResumoGeracao> {
     const hoje = apenasData(referencia);
 
     const contratos = await this.prisma.contrato.findMany({
       where: {
+        id: contratoId,
         situacao: 'ATIVO',
         gerarCobrancas: true,
         dataInicio: { lte: hoje },

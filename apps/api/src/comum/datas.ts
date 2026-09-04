@@ -1,4 +1,7 @@
+import { FUSO_HORARIO } from './ambiente';
+
 const MILISSEGUNDOS_POR_DIA = 86_400_000;
+const MILISSEGUNDOS_POR_MINUTO = 60_000;
 
 export function apenasData(data: Date): Date {
   return new Date(Date.UTC(data.getUTCFullYear(), data.getUTCMonth(), data.getUTCDate()));
@@ -35,6 +38,59 @@ export function formatarCompetencia(data: Date): string {
 /** Chave `AAAA-MM-DD` usada para comparar feriados sem esbarrar em fuso. */
 export function chaveData(data: Date): string {
   return apenasData(data).toISOString().slice(0, 10);
+}
+
+/** Quantos minutos o fuso esta a frente do UTC no instante informado. */
+function deslocamentoDoFuso(instante: Date, fuso: string): number {
+  const partes = new Intl.DateTimeFormat('en-US', {
+    timeZone: fuso,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).formatToParts(instante);
+
+  const campo = (tipo: string): number =>
+    Number(partes.find((parte) => parte.type === tipo)?.value ?? 0);
+
+  const comoUtc = Date.UTC(
+    campo('year'),
+    campo('month') - 1,
+    campo('day'),
+    campo('hour'),
+    campo('minute'),
+    campo('second'),
+  );
+
+  return (comoUtc - (instante.getTime() - instante.getMilliseconds())) / MILISSEGUNDOS_POR_MINUTO;
+}
+
+/**
+ * Converte uma hora de parede (`HH:mm`) do fuso do sistema no instante UTC daquele dia.
+ * `agendadoPara` e instante, nao data de negocio: gravar 09:00 direto em UTC faria a
+ * cobranca configurada para as 09:00 sair as 06:00 em Brasilia.
+ */
+export function instanteLocal(dia: Date, horaMinuto: string, fuso: string = FUSO_HORARIO): Date {
+  const [hora, minuto] = horaMinuto.split(':').map(Number);
+
+  const ingenuo = Date.UTC(
+    dia.getUTCFullYear(),
+    dia.getUTCMonth(),
+    dia.getUTCDate(),
+    Number.isFinite(hora) ? (hora as number) : 9,
+    Number.isFinite(minuto) ? (minuto as number) : 0,
+  );
+
+  // Duas passadas: a primeira estima o deslocamento, a segunda confere o resultado
+  // no proprio instante calculado (o que resolve a virada de horario de verao).
+  const estimado = new Date(
+    ingenuo - deslocamentoDoFuso(new Date(ingenuo), fuso) * MILISSEGUNDOS_POR_MINUTO,
+  );
+
+  return new Date(ingenuo - deslocamentoDoFuso(estimado, fuso) * MILISSEGUNDOS_POR_MINUTO);
 }
 
 export function ehFimDeSemana(data: Date): boolean {

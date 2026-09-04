@@ -40,7 +40,7 @@ export class ConviteVistoriaService {
     tipo: string;
     imovel: string;
     expiraEm: Date;
-    /** HTML ja sanitizado do que a gestao pediu para refazer. */
+    /** HTML ja sanitizado do que o gestor do imóvel solicitou para refazer. */
     motivoComplemento?: string | null;
   }): Promise<void> {
     const link = this.linkPara(dados.vistoriaId);
@@ -69,7 +69,7 @@ export class ConviteVistoriaService {
       ? `<p>Olá.</p>` +
         `<p>A ${tipo} do imóvel <strong>${imovel}</strong> foi conferida e precisa de um complemento ` +
         `antes de ser aprovada.</p>` +
-        `<p><strong>O que a gestão pediu:</strong></p>` +
+        `<p><strong>O que o gestor do imóvel solicitou:</strong></p>` +
         `<blockquote style="margin:0 0 16px;padding:12px 16px;border-left:3px solid #d3d7e0;` +
         `background:#f2f4f7;border-radius:0 8px 8px 0">${complemento}</blockquote>` +
         `<p>Abra o mesmo link de antes: o que você já enviou continua lá, é só completar o que falta.</p>` +

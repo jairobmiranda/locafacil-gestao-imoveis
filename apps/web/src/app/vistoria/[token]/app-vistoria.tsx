@@ -359,7 +359,7 @@ export function AppVistoria({ token, inicial }: { token: string; inicial: Vistor
               </p>
               {vistoria.motivoRecusa ? (
                 <div className="aviso-complemento">
-                  <strong>A gestão pediu um complemento</strong>
+                  <strong>O gestor do imóvel solicitou um complemento</strong>
                   {/* HTML sanitizado na API: whitelist de tags, sem atributo nenhum. */}
                   <div
                     className="texto-formatado"

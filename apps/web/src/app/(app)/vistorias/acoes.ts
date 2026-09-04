@@ -144,9 +144,34 @@ export async function aprovarVistoria(vistoriaId: string): Promise<void> {
   revalidatePath(`/vistorias/${vistoriaId}`);
 }
 
-export async function recusarVistoria(vistoriaId: string, motivo: string): Promise<void> {
-  await apiPost(`/vistorias/${vistoriaId}/recusar`, { motivo });
+/**
+ * O pedido de complemento vale por si, mas o e-mail é o que faz alguém agir. A resposta diz se
+ * saiu e para quem, senão o gestor fica no escuro achando que avisou.
+ */
+export async function recusarVistoria(
+  vistoriaId: string,
+  motivo: string,
+): Promise<EstadoVistoria> {
+  let resposta: { avisado: boolean; conviteEmail: string | null; conviteCopias: string | null };
+
+  try {
+    resposta = await apiPost(`/vistorias/${vistoriaId}/recusar`, { motivo });
+  } catch (erro) {
+    return traduzir(erro);
+  }
+
   revalidatePath(`/vistorias/${vistoriaId}`);
+
+  const destinos = [resposta.conviteEmail, ...(resposta.conviteCopias ?? '').split(';')]
+    .filter(Boolean)
+    .join(', ');
+
+  return {
+    sucesso: resposta.avisado
+      ? `Complemento pedido e enviado por e-mail para ${destinos}.`
+      : 'Complemento registrado, mas ninguém foi avisado: esta vistoria ainda não teve convite ' +
+        'enviado. Mande o convite abaixo e o pedido vai junto.',
+  };
 }
 
 export async function gerarLaudo(vistoriaId: string): Promise<void> {

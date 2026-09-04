@@ -42,6 +42,7 @@ export function AcoesVistoria({
   const [processando, iniciar] = useTransition();
   const [copiado, setCopiado] = useState(false);
   const [pedindoComplemento, setPedindoComplemento] = useState(false);
+  const [complemento, setComplemento] = useState<EstadoVistoria>({});
 
   // A acao do form reseta os campos nao controlados: validade e escolhas ficam no estado.
   const [validadeDias, setValidadeDias] = useState(String(validadeSugerida));
@@ -188,6 +189,9 @@ export function AcoesVistoria({
         </div>
       ) : null}
 
+      {complemento.erro ? <p className="alerta-erro">{complemento.erro}</p> : null}
+      {complemento.sucesso ? <p className="texto-suave">{complemento.sucesso}</p> : null}
+
       {pedindoComplemento ? (
         <JanelaComplemento
           ambiente={imovel}
@@ -195,8 +199,14 @@ export function AcoesVistoria({
           aoFechar={() => setPedindoComplemento(false)}
           aoConfirmar={(motivo) =>
             executar(async () => {
-              await recusarVistoria(id, motivo);
-              setPedindoComplemento(false);
+              const estado = await recusarVistoria(id, motivo);
+
+              setComplemento(estado);
+
+              // Erro mantém a janela aberta: o texto que a pessoa escreveu não pode se perder.
+              if (!estado.erro) {
+                setPedindoComplemento(false);
+              }
             })
           }
         />

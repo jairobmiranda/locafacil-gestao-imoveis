@@ -50,6 +50,9 @@ const VARIAVEIS = [
   'cobranca.valor_juros',
   'pix.copia_e_cola',
   'pix.qrcode_url',
+  'pix.titular',
+  'pix.instituicao',
+  'pix.confirmacao',
   'link_pagamento',
   'cobrancas.quantidade',
   'cobrancas.total',
@@ -65,7 +68,8 @@ function layout(titulo: string, miolo: string, comPix = true): string {
     <p style="margin:0 0 12px;">Copie o código abaixo e cole no app do seu banco:</p>
     <p style="background:#f4f4f5;border:1px solid #e4e4e7;border-radius:6px;padding:12px;
               font-family:monospace;font-size:12px;word-break:break-all;">{{pix.copia_e_cola}}</p>
-    <p style="margin:12px 0;"><img src="{{pix.qrcode_url}}" alt="QR Code Pix" width="180" height="180" /></p>`
+    <p style="margin:12px 0;"><img src="{{pix.qrcode_url}}" alt="QR Code Pix" width="180" height="180" /></p>
+    {{pix.confirmacao}}`
     : '';
 
   return `<!DOCTYPE html>

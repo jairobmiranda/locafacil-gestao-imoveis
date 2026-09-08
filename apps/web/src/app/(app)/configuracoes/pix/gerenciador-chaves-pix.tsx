@@ -16,6 +16,7 @@ type ChavePix = {
   chave: string;
   nomeBeneficiario: string;
   cidadeBeneficiario: string;
+  instituicao: string | null;
   padrao: boolean;
   ativa: boolean;
 };
@@ -76,6 +77,7 @@ export function GerenciadorChavesPix({ chaves }: { chaves: ChavePix[] }) {
                 <th>Chave</th>
                 <th>Beneficiário</th>
                 <th>Cidade</th>
+                <th>Instituição</th>
                 <th />
               </tr>
             </thead>
@@ -89,6 +91,7 @@ export function GerenciadorChavesPix({ chaves }: { chaves: ChavePix[] }) {
                   </td>
                   <td data-label="Beneficiário">{chave.nomeBeneficiario}</td>
                   <td data-label="Cidade">{chave.cidadeBeneficiario}</td>
+                  <td data-label="Instituição">{chave.instituicao ?? '—'}</td>
                   <td className="direita acoes-linha">
                     {!chave.padrao && chave.ativa ? (
                       <button
@@ -172,6 +175,14 @@ export function GerenciadorChavesPix({ chaves }: { chaves: ChavePix[] }) {
               Cidade
               <input name="cidadeBeneficiario" maxLength={15} required />
               <small className="texto-suave">Máximo de 15 caracteres</small>
+            </label>
+
+            <label className="campo">
+              Instituição bancária
+              <input name="instituicao" maxLength={60} placeholder="Itaú Unibanco" />
+              <small className="texto-suave">
+                Exibida no e-mail para o inquilino conferir o destinatário antes de pagar
+              </small>
             </label>
           </div>
 

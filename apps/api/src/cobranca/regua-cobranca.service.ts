@@ -292,7 +292,8 @@ export class ReguaCobrancaService {
     hoje: Date,
     feriados: ReadonlySet<string>,
   ): Promise<boolean> {
-    const variaveis = montarVariaveis(cobranca, contato, hoje, feriados);
+    const beneficiario = await this.pix.beneficiario(cobranca.contrato?.chavePixId);
+    const variaveis = montarVariaveis(cobranca, contato, hoje, feriados, beneficiario);
     const assunto = renderizar(regra.modeloEmail.assunto, variaveis);
     const corpoHtml = renderizar(regra.modeloEmail.corpoHtml, variaveis);
 
@@ -349,7 +350,15 @@ export class ReguaCobrancaService {
     }
 
     const pixPayload = await this.pixConsolidado(cobrancas, hoje, feriados);
-    const variaveis = montarVariaveisConsolidado(cobrancas, contato, hoje, pixPayload, feriados);
+    const beneficiario = await this.pix.beneficiario(maisAntiga.contrato?.chavePixId);
+    const variaveis = montarVariaveisConsolidado(
+      cobrancas,
+      contato,
+      hoje,
+      pixPayload,
+      feriados,
+      beneficiario,
+    );
 
     const agendadoPara = instanteLocal(hoje, regra.horaEnvio);
 
@@ -466,6 +475,7 @@ export class ReguaCobrancaService {
       { nome: contato?.nome ?? destinatario },
       agora,
       await this.feriados.chaves(),
+      await this.pix.beneficiario(cobranca.contrato?.chavePixId),
     );
     const anteriores = await this.prisma.notificacao.count({
       where: { lancamentoId, regraCobrancaId: null },

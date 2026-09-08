@@ -895,6 +895,8 @@ model ChavePix {
   nomeBeneficiario   String       @map("nome_beneficiario") @db.VarChar(25)
   /// Limite do padrao BR Code EMV.
   cidadeBeneficiario String       @map("cidade_beneficiario") @db.VarChar(15)
+  /// Banco onde a chave esta registrada. Vai no e-mail para o inquilino conferir o destinatario.
+  instituicao        String?      @db.VarChar(60)
   padrao             Boolean      @default(false)
   ativa              Boolean      @default(true)
 

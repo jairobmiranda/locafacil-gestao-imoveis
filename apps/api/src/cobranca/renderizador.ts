@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client';
 import { escaparHtml } from '../comum/html';
 import { gerarTokenPublico } from '../comum/link-assinado';
 import { calcularEncargos } from '../lancamentos/encargos';
+import { higienizar, lerNomeBeneficiario } from '../pix/br-code';
 
 const FORMATO_MOEDA = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const FORMATO_DATA = new Intl.DateTimeFormat('pt-BR', { timeZone: 'UTC' });
@@ -12,6 +13,45 @@ const FORMATO_MES = new Intl.DateTimeFormat('pt-BR', {
 });
 
 export const CID_QRCODE = 'qrcode-pix';
+
+/** Titular e banco da chave usada na cobranca, para o inquilino conferir antes de pagar. */
+export type BeneficiarioPix = { nome: string; instituicao: string | null };
+
+/**
+ * O payload fica congelado no lancamento, entao a chave cadastrada hoje pode nao ser
+ * a que gerou aquele QR. Sem essa conferencia o e-mail anunciaria um destinatario que
+ * nao e o do pagamento — justamente o contrario do que o bloco serve para evitar.
+ */
+function confirmacaoDestinatario(
+  payload: string | null,
+  beneficiario: BeneficiarioPix | null,
+): { titular: string; instituicao: string; bloco: string } {
+  const nomeNoPayload = payload ? lerNomeBeneficiario(payload) : null;
+
+  if (!nomeNoPayload) {
+    return { titular: '', instituicao: '', bloco: '' };
+  }
+
+  const cadastro =
+    beneficiario && higienizar(beneficiario.nome, 25) === nomeNoPayload ? beneficiario : null;
+
+  // Sem correspondencia, sobra o nome do proprio QR: sem acento e em caixa alta, mas correto.
+  const titular = escaparHtml(cadastro?.nome ?? nomeNoPayload);
+  const instituicao = escaparHtml(cadastro?.instituicao ?? '');
+
+  const bloco =
+    `<div style="margin:16px 0;padding:12px 16px;background:#fafafa;border:1px solid #e4e4e7;` +
+    `border-left:3px solid #18181b;border-radius:6px;">` +
+    `<p style="margin:0 0 6px;font-size:13px;color:#52525b;">` +
+    `Confira o destinatário do Pix antes de confirmar o pagamento:</p>` +
+    `<p style="margin:0;font-weight:bold;">${titular}</p>` +
+    (instituicao
+      ? `<p style="margin:2px 0 0;font-size:13px;color:#52525b;">${instituicao}</p>`
+      : '') +
+    `</div>`;
+
+  return { titular, instituicao, bloco };
+}
 
 /** Pagina publica onde o inquilino avisa que pagou. */
 function linkPagamento(lancamentoId: string): string {
@@ -46,6 +86,7 @@ export function montarVariaveis(
   inquilino: { nome: string },
   referencia: Date,
   feriados: ReadonlySet<string> = new Set(),
+  beneficiario: BeneficiarioPix | null = null,
 ): Record<string, string> {
   const encargos = calcularEncargos(
     lancamento.valor,
@@ -74,6 +115,8 @@ export function montarVariaveis(
         .join('')}</table>`
     : '';
 
+  const destinatario = confirmacaoDestinatario(lancamento.pixPayload, beneficiario);
+
   return {
     'inquilino.nome': escaparHtml(inquilino.nome),
     'inquilino.primeiro_nome': escaparHtml(primeiroNome(inquilino.nome)),
@@ -99,6 +142,9 @@ export function montarVariaveis(
     'pix.qrcode': lancamento.pixPayload
       ? `<img src="cid:${CID_QRCODE}" alt="QR Code Pix" width="220" height="220" />`
       : '',
+    'pix.titular': destinatario.titular,
+    'pix.instituicao': destinatario.instituicao,
+    'pix.confirmacao': destinatario.bloco,
   };
 }
 
@@ -118,6 +164,7 @@ export function montarVariaveisConsolidado(
   referencia: Date,
   pixPayload: string | null,
   feriados: ReadonlySet<string> = new Set(),
+  beneficiario: BeneficiarioPix | null = null,
 ): Record<string, string> {
   const [maisAntiga] = cobrancas;
 
@@ -152,8 +199,10 @@ export function montarVariaveisConsolidado(
     })
     .join('');
 
+  const destinatario = confirmacaoDestinatario(pixPayload, beneficiario);
+
   return {
-    ...montarVariaveis(maisAntiga, inquilino, referencia, feriados),
+    ...montarVariaveis(maisAntiga, inquilino, referencia, feriados, beneficiario),
     'cobrancas.quantidade': String(cobrancas.length),
     'cobrancas.total': FORMATO_MOEDA.format(total.toNumber()),
     'cobrancas.multa': FORMATO_MOEDA.format(multa.toNumber()),
@@ -176,6 +225,9 @@ export function montarVariaveisConsolidado(
     'pix.qrcode': pixPayload
       ? `<img src="cid:${CID_QRCODE}" alt="QR Code Pix" width="220" height="220" />`
       : '',
+    'pix.titular': destinatario.titular,
+    'pix.instituicao': destinatario.instituicao,
+    'pix.confirmacao': destinatario.bloco,
   };
 }
 

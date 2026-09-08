@@ -38,6 +38,7 @@ export async function criarChavePix(
       chave: String(dados.get('chave') ?? '').trim(),
       nomeBeneficiario: String(dados.get('nomeBeneficiario') ?? '').trim(),
       cidadeBeneficiario: String(dados.get('cidadeBeneficiario') ?? '').trim(),
+      instituicao: texto(dados.get('instituicao')),
       padrao: dados.get('padrao') === 'on',
       ativa: true,
     });

@@ -7,6 +7,7 @@ type ChavePix = {
   chave: string;
   nomeBeneficiario: string;
   cidadeBeneficiario: string;
+  instituicao: string | null;
   padrao: boolean;
   ativa: boolean;
 };

@@ -119,6 +119,10 @@ export const VARIAVEIS_MODELO_EMAIL = [
   'pix.copia_e_cola',
   'pix.qrcode',
   'pix.qrcode_url',
+  'pix.titular',
+  'pix.instituicao',
+  // Bloco pronto: titular e instituicao da chave, para conferencia antes do pagamento.
+  'pix.confirmacao',
   'link_pagamento',
   // Só fazem sentido no modelo consolidado, quando ha mais de uma parcela em aberto.
   'cobrancas.quantidade',

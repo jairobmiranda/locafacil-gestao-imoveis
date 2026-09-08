@@ -5,6 +5,7 @@ import type {
   CriarChavePixDto,
   GerarCobrancaPixDto,
 } from '@locafacil/contracts';
+import type { BeneficiarioPix } from '../cobranca/renderizador';
 import { PrismaService } from '../prisma/prisma.service';
 import { gerarBrCode, higienizarTxid } from './br-code';
 
@@ -94,6 +95,7 @@ export class PixService {
       valor: lancamento.valor.toNumber(),
       chave: chave.chave,
       nomeBeneficiario: chave.nomeBeneficiario,
+      instituicao: chave.instituicao,
     };
   }
 
@@ -114,6 +116,20 @@ export class PixService {
       txid: higienizarTxid(dados.txid),
       descricao: dados.descricao,
     });
+  }
+
+  /**
+   * Titular e banco da chave que a cobranca usa, para o e-mail pedir a conferencia do
+   * destinatario. Sem chave configurada o e-mail sai igual, apenas sem o bloco.
+   */
+  async beneficiario(chavePixId?: string | null): Promise<BeneficiarioPix | null> {
+    try {
+      const chave = await this.resolverChave(chavePixId);
+
+      return { nome: chave.nomeBeneficiario, instituicao: chave.instituicao };
+    } catch {
+      return null;
+    }
   }
 
   private async buscarChave(id: string) {

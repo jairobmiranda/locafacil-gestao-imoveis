@@ -17,6 +17,8 @@ export const criarChavePixSchema = z
     // Limites do padrao BR Code EMV.
     nomeBeneficiario: z.string().min(1).max(25),
     cidadeBeneficiario: z.string().min(1).max(15),
+    // Exibida no e-mail de cobranca para o inquilino conferir o destinatario do Pix.
+    instituicao: z.string().max(60).optional(),
     padrao: z.boolean().default(false),
     ativa: z.boolean().default(true),
   })
@@ -28,6 +30,7 @@ export const criarChavePixSchema = z
 export const atualizarChavePixSchema = z.object({
   nomeBeneficiario: z.string().min(1).max(25).optional(),
   cidadeBeneficiario: z.string().min(1).max(15).optional(),
+  instituicao: z.string().max(60).nullish(),
   padrao: z.boolean().optional(),
   ativa: z.boolean().optional(),
 });
@@ -48,4 +51,5 @@ export type CobrancaPix = {
   valor: number;
   chave: string;
   nomeBeneficiario: string;
+  instituicao: string | null;
 };

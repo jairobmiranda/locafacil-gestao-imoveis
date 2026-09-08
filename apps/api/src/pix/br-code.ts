@@ -52,7 +52,7 @@ export function crc16(texto: string): string {
 }
 
 /** Remove acentos e caracteres fora da faixa aceita pelo padrao. */
-function higienizar(texto: string, limite: number): string {
+export function higienizar(texto: string, limite: number): string {
   return texto
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -89,4 +89,31 @@ export function gerarBrCode(dados: DadosBrCode): string {
   const comMarcadorCrc = `${payload}${ID_CRC}04`;
 
   return `${comMarcadorCrc}${crc16(comMarcadorCrc)}`;
+}
+
+/**
+ * Nome do beneficiario gravado no proprio BR Code (campo 59). O payload fica congelado
+ * no lancamento, entao e ele — e nao a chave atual — que diz para quem o Pix vai cair.
+ */
+export function lerNomeBeneficiario(payload: string): string | null {
+  let posicao = 0;
+
+  while (posicao + 4 <= payload.length) {
+    const id = payload.slice(posicao, posicao + 2);
+    const tamanho = Number(payload.slice(posicao + 2, posicao + 4));
+
+    if (!Number.isInteger(tamanho)) {
+      return null;
+    }
+
+    const valor = payload.slice(posicao + 4, posicao + 4 + tamanho);
+
+    if (id === ID_NOME) {
+      return valor.trim() || null;
+    }
+
+    posicao += 4 + tamanho;
+  }
+
+  return null;
 }

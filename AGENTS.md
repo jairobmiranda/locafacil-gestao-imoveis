@@ -28,6 +28,14 @@ O contrato é a fonte única de tipos e validação nas duas pontas.
 - Web nunca fala com o banco nem com o armazenamento (Garage). O navegador nunca fala com a API direto:
   chamadas saem do servidor Next (`apps/web/src/lib/api.ts`) ou de route handlers de proxy.
 - Domínio nomeado em **português sem acento** (entidades, campos, enums, pastas).
+- Zod 4: schema de atualização usa `parcial(criarXSchema)` de `contracts/src/comum.ts`, **nunca**
+  `.partial()`. No zod 4 o `.default()` vale dentro de `.optional()`, e um PATCH só com um campo
+  voltaria com todos os padrões (`situacao`, `itens: []`...) sobrescrevendo o que está gravado.
+- **Não** rodar `npm audit fix --force`: ele "resolve" rebaixando o `minio` para 7.1.3 e o
+  `@nestjs/cli` para 7.2.0. Os itens que sobram no audit são conhecidos: a cadeia do `minio`
+  (`query-string`, `decode-uri-component`, `stream-json`) não é alcançável, porque o cliente só usa
+  `qs.stringify` e o projeto não chama `listenBucketNotification`; a do `@nestjs/cli`
+  (`deepmerge`, low) é só de build e some no CLI 12, que exige TypeScript 6.
 
 ## API (NestJS)
 

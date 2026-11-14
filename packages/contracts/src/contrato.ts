@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { paginacaoSchema } from './comum';
+import { paginacaoSchema, parcial } from './comum';
 
 export const situacaoContratoSchema = z.enum([
   'RASCUNHO',
@@ -98,9 +98,7 @@ export const criarContratoSchema = contratoBaseSchema
     path: ['partes'],
   });
 
-export const atualizarContratoSchema = contratoBaseSchema
-  .omit({ imovelId: true })
-  .partial()
+export const atualizarContratoSchema = parcial(contratoBaseSchema.omit({ imovelId: true }))
   .refine(periodoValido, { message: 'A data fim deve ser depois da data início', path: ['dataFim'] })
   .refine(umContatoPrincipal, {
     message: 'Marque no máximo uma parte como contato principal',

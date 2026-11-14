@@ -16,6 +16,27 @@ export type Paginado<T> = {
 
 export const uuidSchema = z.string().uuid();
 
+type SemPadrao<Campo> = Campo extends z.ZodDefault<infer Interno> ? Interno : Campo;
+
+/**
+ * `.partial()` para schemas de atualização. No zod 4 o `.default()` vale mesmo dentro de
+ * `.optional()`: um PATCH só com o apelido voltaria com `situacao`, `itens` e demais campos
+ * no valor padrão e sobrescreveria o que está gravado. Aqui o padrão sai antes de o campo
+ * virar opcional, e campo ausente continua ausente.
+ */
+export function parcial<Forma extends z.ZodRawShape>(schema: z.ZodObject<Forma>) {
+  const forma = Object.fromEntries(
+    Object.entries(schema.shape).map(([chave, campo]) => [
+      chave,
+      z.optional(campo instanceof z.ZodDefault ? campo.unwrap() : campo),
+    ]),
+  );
+
+  return z.object(forma) as unknown as z.ZodObject<{
+    [Chave in keyof Forma]: z.ZodOptional<SemPadrao<Forma[Chave]>>;
+  }>;
+}
+
 /**
  * Telefone e CEP sao guardados so com digitos: a mascara e responsabilidade da tela.
  * O transform aceita valor mascarado vindo de qualquer cliente.

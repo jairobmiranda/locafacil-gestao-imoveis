@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { cepSchema, documentoSchema, paginacaoSchema, telefoneSchema } from './comum';
+import { cepSchema, documentoSchema, paginacaoSchema, parcial, telefoneSchema } from './comum';
 
 export const estadoCivilSchema = z.enum([
   'SOLTEIRO',
@@ -32,7 +32,7 @@ export const criarPessoaSchema = z.object({
   observacoes: z.string().optional(),
 });
 
-export const atualizarPessoaSchema = criarPessoaSchema.partial();
+export const atualizarPessoaSchema = parcial(criarPessoaSchema);
 
 export const listarPessoasSchema = paginacaoSchema.extend({
   busca: z.string().trim().min(1).max(150).optional(),

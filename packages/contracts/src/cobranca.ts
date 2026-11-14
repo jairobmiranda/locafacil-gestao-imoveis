@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { paginacaoSchema } from './comum';
+import { paginacaoSchema, parcial } from './comum';
 import { situacaoLancamentoSchema } from './lancamento';
 
 export const situacaoNotificacaoSchema = z.enum([
@@ -24,7 +24,7 @@ export const criarModeloEmailSchema = z.object({
   ativo: z.boolean().default(true),
 });
 
-export const atualizarModeloEmailSchema = criarModeloEmailSchema.omit({ chave: true }).partial();
+export const atualizarModeloEmailSchema = parcial(criarModeloEmailSchema.omit({ chave: true }));
 
 export const criarReguaCobrancaSchema = z.object({
   nome: z.string().min(1).max(100),
@@ -34,7 +34,7 @@ export const criarReguaCobrancaSchema = z.object({
   modeloConsolidadoId: z.string().uuid().nullish(),
 });
 
-export const atualizarReguaCobrancaSchema = criarReguaCobrancaSchema.partial();
+export const atualizarReguaCobrancaSchema = parcial(criarReguaCobrancaSchema);
 
 export const criarRegraCobrancaSchema = z.object({
   diasOffset: z.number().int().min(-90).max(365),
@@ -49,7 +49,7 @@ export const criarRegraCobrancaSchema = z.object({
   ativa: z.boolean().default(true),
 });
 
-export const atualizarRegraCobrancaSchema = criarRegraCobrancaSchema.partial();
+export const atualizarRegraCobrancaSchema = parcial(criarRegraCobrancaSchema);
 
 export const listarNotificacoesSchema = paginacaoSchema.extend({
   lancamentoId: z.string().uuid().optional(),

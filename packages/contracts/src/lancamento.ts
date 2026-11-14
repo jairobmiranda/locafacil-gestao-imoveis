@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { paginacaoSchema } from './comum';
+import { paginacaoSchema, parcial } from './comum';
 
 export const naturezaSchema = z.enum(['ENTRADA', 'SAIDA']);
 
@@ -50,9 +50,7 @@ export const criarLancamentoSchema = lancamentoBaseSchema.refine(somaDosItensCon
   path: ['itens'],
 });
 
-export const atualizarLancamentoSchema = lancamentoBaseSchema
-  .omit({ imovelId: true })
-  .partial()
+export const atualizarLancamentoSchema = parcial(lancamentoBaseSchema.omit({ imovelId: true }))
   .refine(somaDosItensConfere, {
     message: 'A soma dos itens deve ser igual ao valor do lançamento',
     path: ['itens'],

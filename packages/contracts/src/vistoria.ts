@@ -182,9 +182,7 @@ export const aceitarVistoriaSchema = z.object({
   nome: z.string().trim().min(3).max(150),
   /** Sem CPF o aceite identifica um nome qualquer: é ele que amarra a declaração à pessoa. */
   documento: cpfSchema,
-  confirmado: z.literal(true, {
-    errorMap: () => ({ message: 'Marque a declaração para concluir a vistoria' }),
-  }),
+  confirmado: z.literal(true, { error: 'Marque a declaração para concluir a vistoria' }),
 });
 
 export const enviarLaudoSchema = z.object({

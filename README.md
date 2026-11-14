@@ -10,7 +10,7 @@ lançamentos financeiros, régua de cobrança por e-mail, cobrança via Pix e an
 | API | NestJS 11, Prisma 6, Zod, JWT (Passport) |
 | Web | Next.js 15 (App Router), React 19 |
 | Banco | MariaDB 11.4 |
-| Arquivos | MinIO (S3 compatível) |
+| Arquivos | Garage (S3 compatível) |
 | E-mail | SMTP (Nodemailer) |
 | Monorepo | npm workspaces + Turborepo |
 
@@ -19,7 +19,7 @@ lançamentos financeiros, régua de cobrança por e-mail, cobrança via Pix e an
 ```
 apps/
   api/                 API NestJS
-    src/anexos/        upload e download via MinIO
+    src/anexos/        upload e download no armazenamento S3 (Garage)
     src/auth/          login, JWT, guard global
     src/cobranca/      régua de cobrança, notificações, agendadores
     src/contratos/     contratos e geração automática de cobranças
@@ -32,18 +32,18 @@ apps/
 packages/
   contracts/           schemas Zod e tipos compartilhados
 prisma/                schema, migrations e seed
-docker/                Dockerfiles de build (API e Web)
+docker/                Dockerfiles de build (API, Web e Garage) e garage.toml
 ```
 
 ## Pré-requisitos
 
 - Node.js >= 22
 - npm 11 (definido em `packageManager`)
-- Docker (para o banco e o MinIO locais)
+- Docker (para o banco e o Garage locais)
 
 ## Como rodar
 
-1. Suba a infraestrutura local (MariaDB e MinIO, com o bucket já criado):
+1. Suba a infraestrutura local (MariaDB e Garage, com a chave e o bucket já criados):
 
    ```powershell
    docker compose -f docker-compose.dev.yml up -d
@@ -80,7 +80,8 @@ docker/                Dockerfiles de build (API e Web)
 - API: <http://127.0.0.1:3000/api>
 - Swagger (fora de produção): <http://127.0.0.1:3000/api/docs>
 - Web: <http://localhost:3001>
-- Console do MinIO: <http://localhost:9001>
+- Garage (S3): <http://localhost:3900>. Não tem console web; para conferir o bucket:
+  `docker exec locafacil-garage /garage bucket info locafacil`
 
 ## Scripts
 
@@ -106,7 +107,7 @@ Todas estão documentadas em `.env.example`. Resumo dos grupos:
 | Banco | `DATABASE_URL`, `SHADOW_DATABASE_URL` |
 | API | `API_PORT`, `API_PREFIX`, `CORS_ORIGINS`, `TZ` |
 | Auth | `JWT_SECRET`, `JWT_EXPIRES_IN` |
-| MinIO | `MINIO_ENDPOINT`, `MINIO_PORT`, `MINIO_USE_SSL`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_BUCKET` |
+| Armazenamento | `S3_ENDPOINT`, `S3_PORT`, `S3_USE_SSL`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET`, `S3_REGION` |
 | E-mail | `EMAIL_ENVIO_ATIVO`, `EMAIL_LOTE`, `SMTP_*`, `EMAIL_REPLY_TO` |
 | Agendadores | `CRONS_ATIVOS`, `CRON_GERAR_COBRANCAS`, `CRON_MARCAR_ATRASO`, `CRON_REGUA_COBRANCA`, `CRON_ENVIO_EMAIL` |
 | Web | `API_URL` |
@@ -126,7 +127,7 @@ Observações:
 - `JwtAuthGuard` é global; rotas públicas são marcadas com `@Publico()`.
 - `DecimalInterceptor` global converte `Prisma.Decimal` em número nas respostas.
 - Entidades e campos do domínio são nomeados em português sem acento.
-- Arquivos nunca trafegam direto do navegador para o MinIO: sobem e descem pela API.
+- Arquivos nunca trafegam direto do navegador para o Garage: sobem e descem pela API.
 
 ## Agendadores
 
@@ -147,7 +148,38 @@ dias, zero desliga a recuperação).
 
 ## Deploy
 
-Deploy no CapRover usando os arquivos `captain-definition-api` e
-`captain-definition-web`, que apontam para `docker/Dockerfile.api` e
-`docker/Dockerfile.web`. Em produção, rode `npm run db:deploy` para aplicar as
-migrations pendentes.
+Deploy no CapRover usando os arquivos `captain-definition-api`, `captain-definition-web` e
+`captain-definition-garage`, que apontam para os Dockerfiles em `docker/`. Em produção, rode
+`npm run db:deploy` para aplicar as migrations pendentes.
+
+### Armazenamento (Garage)
+
+O Garage roda com um nó só e, na primeira subida, cria sozinho o layout, a chave de acesso e o
+bucket (`--single-node --default-bucket`). Não há passo manual de linha de comando.
+
+1. Crie o app `garage` no CapRover com **Has Persistent Data** marcado (não dá para mudar
+   depois) e, em HTTP Settings, marque **Do not expose as web app**.
+2. Em App Configs, cadastre os diretórios persistentes `/var/lib/garage/meta` e
+   `/var/lib/garage/data`.
+3. Gere os segredos e cadastre-os nas variáveis de ambiente do app, junto com
+   `GARAGE_DEFAULT_BUCKET=locafacil`:
+
+   ```powershell
+   node -e "const c=require('crypto');console.log('GARAGE_RPC_SECRET='+c.randomBytes(32).toString('hex'));console.log('GARAGE_DEFAULT_ACCESS_KEY=GK'+c.randomBytes(12).toString('hex'));console.log('GARAGE_DEFAULT_SECRET_KEY='+c.randomBytes(32).toString('hex'))"
+   ```
+
+4. Faça o deploy do app usando `./captain-definition-garage`.
+5. Na API, configure `S3_ENDPOINT=srv-captain--garage`, `S3_PORT=3900`, `S3_USE_SSL=false`,
+   `S3_BUCKET=locafacil`, `S3_REGION=garage` e, em `S3_ACCESS_KEY` e `S3_SECRET_KEY`, os mesmos
+   valores de `GARAGE_DEFAULT_ACCESS_KEY` e `GARAGE_DEFAULT_SECRET_KEY`. O log de boot da API
+   avisa se o bucket não for encontrado.
+
+Para conferir pelo SSH da VPS (a imagem não tem shell, o binário é chamado direto):
+
+```sh
+docker exec $(docker ps -q -f name=srv-captain--garage) /garage bucket info locafacil
+```
+
+O Garage não tem versionamento nem lixeira, e com um nó só não há réplica: objeto apagado não
+volta. Quem protege os arquivos é o backup externo. Não crie regra de lifecycle com expiração:
+anexos e fotos de vistoria são permanentes e o banco aponta para eles.

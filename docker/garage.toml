@@ -1,0 +1,25 @@
+# Configuração única do Garage, usada no dev (docker-compose.dev.yml) e no CapRover
+# (docker/Dockerfile.garage). Não guarda segredo: o rpc_secret e a chave de acesso entram por
+# variável de ambiente (GARAGE_RPC_SECRET e GARAGE_DEFAULT_*).
+#
+# Um nó só, sem replicação. Quem protege os arquivos é o backup externo, não o cluster.
+
+metadata_dir = "/var/lib/garage/meta"
+data_dir = "/var/lib/garage/data"
+
+# sqlite em vez do lmdb (padrão): o lmdb pode corromper depois de um desligamento abrupto, e o
+# volume de escrita do sistema é baixo, então a lentidão relativa do sqlite não pesa.
+db_engine = "sqlite"
+metadata_auto_snapshot_interval = "6h"
+metadata_fsync = true
+data_fsync = true
+
+replication_factor = 1
+
+rpc_bind_addr = "0.0.0.0:3901"
+rpc_public_addr = "127.0.0.1:3901"
+
+[s3_api]
+# Precisa ser igual ao S3_REGION da API: o Garage recusa assinatura feita com outra região.
+s3_region = "garage"
+api_bind_addr = "0.0.0.0:3900"

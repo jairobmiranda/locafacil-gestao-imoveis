@@ -6,7 +6,7 @@ import { codigoVerificacao, DECLARACAO_EXECUTOR, DECLARACAO_GESTOR } from '@loca
 import { LaudoService } from '../apps/api/src/vistorias/laudo.service';
 
 /**
- * Gera um laudo de exemplo em PDF, sem banco, sem MinIO e sem e-mail. Serve para conferir o
+ * Gera um laudo de exemplo em PDF, sem banco, sem armazenamento e sem e-mail. Serve para conferir o
  * desenho das páginas (capa, aceites, linha do tempo, fotos e manifesto) depois de mexer no layout.
  *
  * Uso: npm.cmd run laudo:testar (o tsconfig da API é obrigatório: o serviço usa decorators).

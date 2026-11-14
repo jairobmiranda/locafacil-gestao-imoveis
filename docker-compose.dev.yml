@@ -21,38 +21,33 @@ services:
       timeout: 5s
       retries: 10
 
-  minio:
-    image: minio/minio:latest
-    container_name: locafacil-minio
+  # Armazenamento S3 (anexos e fotos de vistoria). Mesma imagem e mesmo garage.toml do
+  # CapRover. Na primeira subida o próprio Garage monta o layout e cria a chave e o bucket.
+  # Credenciais só de desenvolvimento: são as mesmas S3_* do .env.example.
+  garage:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.garage
+    container_name: locafacil-garage
     restart: unless-stopped
     environment:
-      MINIO_ROOT_USER: locafacil
-      MINIO_ROOT_PASSWORD: locafacil123
-    command: server /data --console-address ":9001"
+      GARAGE_RPC_SECRET: a0ff6673643a14c59fbf1cdd66b70cef2412bbd326569433e17f6f621b1b3caa
+      GARAGE_DEFAULT_ACCESS_KEY: GK55d6550ccb629d52f0d6dc01
+      GARAGE_DEFAULT_SECRET_KEY: fd90cb9f1088634a9e4843951bf8163b379b9c0e301d1ed7d12d13a9f956a72f
+      GARAGE_DEFAULT_BUCKET: locafacil
     ports:
-      - '9000:9000'
-      - '9001:9001'
+      - '3900:3900'
     volumes:
-      - minio_data:/data
+      - garage_meta:/var/lib/garage/meta
+      - garage_data:/var/lib/garage/data
     healthcheck:
-      test: ['CMD', 'mc', 'ready', 'local']
+      # A imagem não tem shell: o healthcheck chama o binário direto.
+      test: ['CMD', '/garage', 'status']
       interval: 10s
       timeout: 5s
       retries: 10
 
-  # Cria o bucket na primeira subida e encerra.
-  minio-init:
-    image: minio/mc:latest
-    depends_on:
-      minio:
-        condition: service_healthy
-    entrypoint: >
-      /bin/sh -c "
-      mc alias set local http://minio:9000 locafacil locafacil123 &&
-      mc mb --ignore-existing local/locafacil &&
-      exit 0
-      "
-
 volumes:
   mariadb_data:
-  minio_data:
+  garage_meta:
+  garage_data:

@@ -164,7 +164,7 @@ export class EnvioNotificacoesService {
     }
   }
 
-  /** O QR vai como imagem embutida porque o MinIO nao e publico. */
+  /** O QR vai como imagem embutida porque o armazenamento nao e publico. */
   private async montarAnexos(pixPayload: string | null): Promise<AnexoEmail[] | undefined> {
     if (!pixPayload) {
       return undefined;

@@ -28,7 +28,7 @@ por imóvel, gestão de contratos de locação e régua automatizada de cobranç
 | API e agendador | NestJS | Domínio existente do time, `@nestjs/schedule` resolve os crons no mesmo container |
 | ORM | Prisma | Migrations versionadas, tipagem forte |
 | Banco | MariaDB (CapRover) | Já provisionado |
-| Arquivos | MinIO (CapRover) | Upload e download por presigned URL, o arquivo não trafega pela API |
+| Arquivos | Garage, S3 compatível (CapRover) | Leve e auto-hospedado; o arquivo sobe e desce pela API, o bucket não é público |
 | Front | Next.js | Domínio existente do time |
 | E-mail | Microsoft Graph API | Ver alerta abaixo |
 
@@ -418,7 +418,7 @@ que alterações posteriores na chave não invalidem cobranças já enviadas.
 
 ### `anexos`
 
-Relacionamento polimórfico, sem FK, apontando para objetos no MinIO.
+Relacionamento polimórfico, sem FK, apontando para objetos no armazenamento S3 (Garage).
 
 | Campo | Tipo | Nulo | Descrição |
 |---|---|---|---|
@@ -427,7 +427,7 @@ Relacionamento polimórfico, sem FK, apontando para objetos no MinIO.
 | `entidade_id` | uuid | não | |
 | `especie` | enum `EspecieAnexo` | não | |
 | `bucket` | varchar(63) | não | |
-| `chave_objeto` | varchar(500) | não | Caminho no MinIO |
+| `chave_objeto` | varchar(500) | não | Caminho no bucket |
 | `nome_arquivo` | varchar(255) | não | Nome original |
 | `tipo_conteudo` | varchar(100) | não | MIME |
 | `tamanho_bytes` | bigint | não | |
@@ -436,9 +436,10 @@ Relacionamento polimórfico, sem FK, apontando para objetos no MinIO.
 
 Índice em `(entidade_tipo, entidade_id)`.
 
-Convenção de chave no MinIO: `{entidade_tipo}/{entidade_id}/{uuid}-{nome_arquivo}`.
+Convenção de chave no bucket: `{entidade_tipo}/{entidade_id}/{uuid}-{nome_arquivo}`.
 
-Upload e download sempre por **presigned URL**. Validar MIME e tamanho antes de emitir a URL.
+Upload e download sempre **pela API**: o navegador nunca fala com o armazenamento. Validar MIME e
+tamanho antes de gravar o objeto.
 
 ### `configuracoes`
 
@@ -452,7 +453,7 @@ Upload e download sempre por **presigned URL**. Validar MIME e tamanho antes de 
 
 Uso: remetente padrão, fuso horário, dias de aviso de fim de contrato, texto do rodapé dos e-mails.
 
-> Credenciais (SMTP, Graph, MinIO, banco) ficam em variáveis de ambiente, **nunca** nesta tabela.
+> Credenciais (SMTP, Graph, armazenamento S3, banco) ficam em variáveis de ambiente, **nunca** nesta tabela.
 
 ### `usuarios`
 

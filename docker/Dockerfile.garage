@@ -1,0 +1,12 @@
+# Garage: armazenamento S3 dos anexos e das fotos de vistoria, com um nó só.
+# A imagem oficial tem apenas o binário /garage, sem shell: comandos e healthcheck chamam
+# /garage direto (docker exec <container> /garage status).
+FROM dxflrs/garage:v2.5.0
+
+COPY docker/garage.toml /etc/garage.toml
+
+EXPOSE 3900
+
+# --single-node monta o layout do cluster sozinho. --default-bucket cria a chave e o bucket a
+# partir de GARAGE_DEFAULT_ACCESS_KEY, GARAGE_DEFAULT_SECRET_KEY e GARAGE_DEFAULT_BUCKET.
+CMD ["/garage", "server", "--single-node", "--default-bucket"]

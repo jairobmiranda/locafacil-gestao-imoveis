@@ -25,7 +25,7 @@ Fluxo de uma feature: schema Zod em `packages/contracts/src/<dominio>.ts` -> con
 em `apps/api/src/<dominio>/` -> server action e page em `apps/web/src/app/(app)/<dominio>/`.
 O contrato é a fonte única de tipos e validação nas duas pontas.
 
-- Web nunca fala com o banco nem com o MinIO. O navegador nunca fala com a API direto:
+- Web nunca fala com o banco nem com o armazenamento (Garage). O navegador nunca fala com a API direto:
   chamadas saem do servidor Next (`apps/web/src/lib/api.ts`) ou de route handlers de proxy.
 - Domínio nomeado em **português sem acento** (entidades, campos, enums, pastas).
 
@@ -82,6 +82,24 @@ Nenhuma solução pode depender de o usuário limpar cookies ou abrir aba anôni
   `npx.cmd prisma generate`, com a API parada: no Windows o processo em execução segura o
   `query_engine-windows.dll.node` e a geração cai no stub em vez de falhar com erro.
 
+## Armazenamento (Garage)
+
+- Garage v2.5, S3 compatível, um nó só (`--single-node --default-bucket`): layout, chave e
+  bucket nascem das `GARAGE_DEFAULT_*` na primeira subida, e reiniciar não recria nada. Não há
+  passo manual de CLI. Configuração única em `docker/garage.toml`, para dev e CapRover.
+- A lib `minio` do npm é só o cliente S3. Não existe MinIO no projeto.
+- `S3_REGION` tem de ser igual ao `s3_region` do `garage.toml`. Sem região o cliente assina
+  como `us-east-1` e toda chamada volta `AuthorizationHeaderMalformed`.
+- A imagem `dxflrs/garage` não tem shell: healthcheck e comandos chamam `/garage` direto
+  (`docker exec locafacil-garage /garage bucket info locafacil`). No Git Bash, prefixe com
+  `MSYS_NO_PATHCONV=1`, senão o `/garage` vira caminho do Windows.
+- Chave de acesso no formato que o próprio Garage gera (`GK` + 24 hex); segredo e
+  `rpc_secret` com 64 hex.
+- Sem versionamento e sem réplica: objeto apagado não volta. **Nunca** criar regra de
+  lifecycle com expiração: anexos e fotos de vistoria são permanentes e o banco aponta para
+  eles. Em 2026-11 uma regra de 7 dias, criada fora do projeto no MinIO, apagou os arquivos de
+  produção.
+
 ## Domínios sensíveis
 
 - **Minutas** (`apps/api/src/minutas`): cláusulas são TypeScript versionado em `clausulas/`,
@@ -104,7 +122,7 @@ Nenhuma solução pode depender de o usuário limpar cookies ou abrir aba anôni
   anexo anterior; acima de 8 MB o e-mail leva só o link assinado (`/laudo/<token>`, propósito
   `laudo`, diferente do token do convite).
   Layout do PDF em `laudo-desenho.ts` (paleta e primitivas) e `laudo.service.ts` (páginas).
-  Conferir sem banco nem MinIO: `npm.cmd run laudo:testar` gera `laudo-exemplo.pdf`. Texto abaixo
+  Conferir sem banco nem armazenamento: `npm.cmd run laudo:testar` gera `laudo-exemplo.pdf`. Texto abaixo
   da margem inferior faz o PDFKit abrir página nova: o rodapé zera `page.margins.bottom` antes de
   escrever.
 - **Cobrança**: para testar sem esperar o cron, com `CRONS_ATIVOS=false` e
@@ -124,8 +142,8 @@ Nenhuma solução pode depender de o usuário limpar cookies ou abrir aba anôni
 
 ## Deploy (CapRover)
 
-- `captain-definition-api` e `captain-definition-web` apontam para os Dockerfiles em `docker/`.
-  Portas: API 3000, web 3001.
+- `captain-definition-api`, `captain-definition-web` e `captain-definition-garage` apontam para
+  os Dockerfiles em `docker/`. Portas: API 3000, web 3001, Garage 3900 (só rede interna).
 - No stage builder, copiar `--from=deps /app ./` (não só `node_modules`), senão os binários
   hoistados somem e o build falha com `sh: nest: not found`.
 - O runner da API não pode usar `--ignore-scripts` (o postinstall do `prisma` baixa os engines).

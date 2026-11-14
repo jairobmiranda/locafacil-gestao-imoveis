@@ -87,7 +87,7 @@ export class AnexosController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Remove o anexo e o objeto no MinIO' })
+  @ApiOperation({ summary: 'Remove o anexo e o objeto no armazenamento' })
   remover(@Param('id', ParseUUIDPipe) id: string) {
     return this.anexos.remover(id);
   }

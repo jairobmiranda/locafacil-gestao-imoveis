@@ -913,7 +913,7 @@ model ChavePix {
 // Bloco 5: Apoio
 // ---------------------------------------------------------------------------
 
-/// Relacionamento polimorfico, sem FK, apontando para objetos no MinIO.
+/// Relacionamento polimorfico, sem FK, apontando para objetos no armazenamento S3 (Garage).
 model Anexo {
   id            String        @id @default(uuid()) @db.Char(36)
   entidadeTipo  EntidadeAnexo @map("entidade_tipo")
